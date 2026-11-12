@@ -1,0 +1,354 @@
+[
+  {
+    "id": "seed-001",
+    "subject": "Anatomy",
+    "topic": "Upper limb",
+    "stem": "Which nerve supplies the deltoid muscle?",
+    "options": [
+      "Axillary nerve",
+      "Radial nerve",
+      "Musculocutaneous nerve",
+      "Suprascapular nerve"
+    ],
+    "answer": 0,
+    "explanation": "The axillary nerve (C5, C6) supplies deltoid and teres minor. Injury follows surgical neck of humerus fracture or shoulder dislocation.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-002",
+    "subject": "Anatomy",
+    "topic": "Head and neck",
+    "stem": "Which structure passes through the foramen rotundum?",
+    "options": [
+      "Mandibular nerve",
+      "Maxillary nerve",
+      "Middle meningeal artery",
+      "Facial nerve"
+    ],
+    "answer": 1,
+    "explanation": "Foramen rotundum transmits the maxillary nerve (V2). Mandibular nerve (V3) uses foramen ovale; middle meningeal artery uses foramen spinosum.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-003",
+    "subject": "Physiology",
+    "topic": "Cardiovascular",
+    "stem": "What is the normal pacemaker of the heart?",
+    "options": [
+      "AV node",
+      "SA node",
+      "Bundle of His",
+      "Purkinje fibres"
+    ],
+    "answer": 1,
+    "explanation": "The SA node has the fastest intrinsic firing rate (about 60-100/min) and sets the heart rhythm.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-004",
+    "subject": "Biochemistry",
+    "topic": "Carbohydrate metabolism",
+    "stem": "Which is the rate-limiting enzyme of glycolysis?",
+    "options": [
+      "Hexokinase",
+      "Phosphofructokinase-1",
+      "Pyruvate kinase",
+      "Aldolase"
+    ],
+    "answer": 1,
+    "explanation": "PFK-1 is the main regulatory step: activated by AMP and fructose-2,6-bisphosphate, inhibited by ATP and citrate.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-005",
+    "subject": "Biochemistry",
+    "topic": "Glycogen storage",
+    "stem": "Von Gierke disease is due to deficiency of which enzyme?",
+    "options": [
+      "Glucose-6-phosphatase",
+      "Acid maltase",
+      "Debranching enzyme",
+      "Muscle phosphorylase"
+    ],
+    "answer": 0,
+    "explanation": "Type I GSD: severe fasting hypoglycaemia, hepatomegaly, lactic acidosis, hyperuricaemia, hyperlipidaemia.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-006",
+    "subject": "Pathology",
+    "topic": "Haematopathology",
+    "stem": "Reed-Sternberg cells are characteristic of which condition?",
+    "options": [
+      "Non-Hodgkin lymphoma",
+      "Hodgkin lymphoma",
+      "Multiple myeloma",
+      "Hairy cell leukaemia"
+    ],
+    "answer": 1,
+    "explanation": "Owl-eye binucleate RS cells (CD15+, CD30+) are the hallmark of classical Hodgkin lymphoma.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-007",
+    "subject": "Microbiology",
+    "topic": "Rickettsiae",
+    "stem": "Rocky Mountain spotted fever is caused by:",
+    "options": [
+      "Rickettsia prowazekii",
+      "Rickettsia typhi",
+      "Rickettsia rickettsii",
+      "Orientia tsutsugamushi"
+    ],
+    "answer": 2,
+    "explanation": "R. rickettsii, transmitted by ticks. Rash starts on wrists and ankles and spreads centrally.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-008",
+    "subject": "Pharmacology",
+    "topic": "Toxicology",
+    "stem": "What is the antidote for paracetamol poisoning?",
+    "options": [
+      "Flumazenil",
+      "N-acetylcysteine",
+      "Naloxone",
+      "Atropine"
+    ],
+    "answer": 1,
+    "explanation": "NAC replenishes glutathione and binds the toxic metabolite NAPQI. Give within 8-10 hours for best effect.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-009",
+    "subject": "Pharmacology",
+    "topic": "Neuropharmacology",
+    "stem": "Which is the initial drug of choice for status epilepticus?",
+    "options": [
+      "Phenytoin",
+      "IV lorazepam",
+      "Oral carbamazepine",
+      "Valproate"
+    ],
+    "answer": 1,
+    "explanation": "IV benzodiazepine (lorazepam preferred) first line, followed by a second-line antiseizure drug if seizures persist.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-010",
+    "subject": "Forensic Medicine",
+    "topic": "Head injury",
+    "stem": "A lucid interval is classically associated with:",
+    "options": [
+      "Subdural haematoma",
+      "Extradural haematoma",
+      "Subarachnoid haemorrhage",
+      "Diffuse axonal injury"
+    ],
+    "answer": 1,
+    "explanation": "Extradural haematoma, usually from middle meningeal artery tear after temporal bone fracture.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-011",
+    "subject": "Community Medicine",
+    "topic": "Vector-borne diseases",
+    "stem": "The vector of kala-azar in India is:",
+    "options": [
+      "Anopheles stephensi",
+      "Phlebotomus argentipes",
+      "Culex quinquefasciatus",
+      "Aedes aegypti"
+    ],
+    "answer": 1,
+    "explanation": "Visceral leishmaniasis is transmitted by the sandfly Phlebotomus argentipes.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-012",
+    "subject": "Medicine",
+    "topic": "Respiratory",
+    "stem": "The most common cause of community-acquired pneumonia is:",
+    "options": [
+      "Haemophilus influenzae",
+      "Streptococcus pneumoniae",
+      "Klebsiella pneumoniae",
+      "Mycoplasma pneumoniae"
+    ],
+    "answer": 1,
+    "explanation": "S. pneumoniae remains the commonest bacterial cause of CAP in adults.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-013",
+    "subject": "Surgery",
+    "topic": "Hepatobiliary",
+    "stem": "Charcot's triad (fever, jaundice, right upper quadrant pain) indicates:",
+    "options": [
+      "Acute cholecystitis",
+      "Ascending cholangitis",
+      "Acute pancreatitis",
+      "Hepatic abscess"
+    ],
+    "answer": 1,
+    "explanation": "Ascending cholangitis. Adding hypotension and altered sensorium gives Reynolds' pentad.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-014",
+    "subject": "Obstetrics and Gynaecology",
+    "topic": "Hypertensive disorders",
+    "stem": "Drug of choice for seizure prophylaxis and treatment in eclampsia:",
+    "options": [
+      "Diazepam",
+      "Phenytoin",
+      "Magnesium sulphate",
+      "Labetalol"
+    ],
+    "answer": 2,
+    "explanation": "MgSO4 (Pritchard or Zuspan regimen). Monitor patellar reflex, respiratory rate and urine output; antidote is calcium gluconate.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-015",
+    "subject": "Paediatrics",
+    "topic": "Infectious diseases",
+    "stem": "Koplik spots are seen in:",
+    "options": [
+      "Rubella",
+      "Measles",
+      "Mumps",
+      "Chickenpox"
+    ],
+    "answer": 1,
+    "explanation": "Pathognomonic small white spots on buccal mucosa opposite molars, appearing before the measles rash.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-016",
+    "subject": "Ophthalmology",
+    "topic": "Community ophthalmology",
+    "stem": "The leading cause of blindness in India is:",
+    "options": [
+      "Glaucoma",
+      "Cataract",
+      "Diabetic retinopathy",
+      "Trachoma"
+    ],
+    "answer": 1,
+    "explanation": "Cataract is the leading cause of blindness in India, ahead of refractive error and glaucoma.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-017",
+    "subject": "ENT",
+    "topic": "Nose",
+    "stem": "The most common site of epistaxis is:",
+    "options": [
+      "Woodruff's plexus",
+      "Little's area",
+      "Inferior turbinate",
+      "Olfactory cleft"
+    ],
+    "answer": 1,
+    "explanation": "Little's area on the anteroinferior septum (Kiesselbach's plexus) accounts for most anterior bleeds.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-018",
+    "subject": "Orthopaedics",
+    "topic": "Upper limb trauma",
+    "stem": "The most commonly fractured carpal bone is:",
+    "options": [
+      "Lunate",
+      "Scaphoid",
+      "Triquetrum",
+      "Hamate"
+    ],
+    "answer": 1,
+    "explanation": "Scaphoid, typically after a fall on an outstretched hand; risk of avascular necrosis of the proximal pole.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-019",
+    "subject": "Psychiatry",
+    "topic": "Psychopharmacology",
+    "stem": "Which mood stabiliser requires routine serum level monitoring?",
+    "options": [
+      "Valproate only",
+      "Lithium",
+      "Lamotrigine",
+      "Quetiapine"
+    ],
+    "answer": 1,
+    "explanation": "Lithium has a narrow therapeutic index (about 0.6-1.2 mEq/L); toxicity worsens with dehydration, NSAIDs and thiazides.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-020",
+    "subject": "Dermatology",
+    "topic": "Papulosquamous",
+    "stem": "Auspitz sign is seen in:",
+    "options": [
+      "Lichen planus",
+      "Psoriasis",
+      "Pityriasis rosea",
+      "Pemphigus vulgaris"
+    ],
+    "answer": 1,
+    "explanation": "Pinpoint bleeding on removing psoriatic scales.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-021",
+    "subject": "Anaesthesia",
+    "topic": "Local anaesthetics",
+    "stem": "Which local anaesthetic is the most cardiotoxic?",
+    "options": [
+      "Lignocaine",
+      "Bupivacaine",
+      "Procaine",
+      "Prilocaine"
+    ],
+    "answer": 1,
+    "explanation": "Bupivacaine binds strongly to cardiac sodium channels; treat toxicity with lipid emulsion.",
+    "source": "original sample question",
+    "reviewed": 0
+  },
+  {
+    "id": "seed-022",
+    "subject": "Radiology",
+    "topic": "Neuroimaging",
+    "stem": "Investigation of choice for acute intracranial haemorrhage is:",
+    "options": [
+      "MRI brain",
+      "Non-contrast CT head",
+      "Cerebral angiography",
+      "Skull X-ray"
+    ],
+    "answer": 1,
+    "explanation": "NCCT head is fast and highly sensitive for acute blood.",
+    "source": "original sample question",
+    "reviewed": 0
+  }
+]

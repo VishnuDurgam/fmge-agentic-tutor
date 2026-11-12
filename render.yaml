@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: fmge-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health
+    disk: { name: fmge-data, mountPath: /data, sizeGB: 1 }
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://YOUR-WEB.vercel.app

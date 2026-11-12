@@ -1,0 +1,3 @@
+Magnesium sulphate in eclampsia: loading dose 4 g IV over 5 to 10 minutes plus 10 g IM (Pritchard regimen), then 5 g IM every 4 hours in alternate buttocks. Continue 24 hours after delivery or last seizure. Check patellar reflex present, respiratory rate above 16 per minute, urine output at least 30 mL per hour before each dose. Toxicity: loss of patellar reflex first, then respiratory depression. Antidote: 10 mL of 10 percent calcium gluconate IV.
+
+Glycolysis regulation: phosphofructokinase-1 is the rate-limiting enzyme. Activated by AMP and fructose-2,6-bisphosphate. Inhibited by ATP and citrate. Insulin increases PFK-2 activity which raises fructose-2,6-bisphosphate in the fed state.

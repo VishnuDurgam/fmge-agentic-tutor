@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "FMGE Tutor",
+    "slug": "fmge-agentic-tutor",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": { "bundleIdentifier": "com.vishnudurgam.fmgetutor", "supportsTablet": true },
+    "android": { "package": "com.vishnudurgam.fmgetutor" },
+    "extra": { "apiUrl": "https://YOUR-API.onrender.com" }
+  }
+}
