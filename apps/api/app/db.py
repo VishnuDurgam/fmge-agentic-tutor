@@ -19,6 +19,13 @@ CREATE TABLE IF NOT EXISTS cards (
   subject TEXT, ease REAL DEFAULT 2.5, interval INTEGER DEFAULT 0,
   reps INTEGER DEFAULT 0, due TEXT DEFAULT (date('now'))
 );
+CREATE TABLE IF NOT EXISTS mocks (
+  id TEXT PRIMARY KEY, learner TEXT, preset TEXT, started INTEGER, duration_s INTEGER,
+  status TEXT DEFAULT 'in_progress', score INTEGER
+);
+CREATE TABLE IF NOT EXISTS mock_items (
+  mock_id TEXT, pos INTEGER, question_id TEXT, choice INTEGER, PRIMARY KEY (mock_id, pos)
+);
 CREATE TABLE IF NOT EXISTS profiles (
   learner TEXT PRIMARY KEY, exam_date TEXT, hours_per_day REAL DEFAULT 4
 );

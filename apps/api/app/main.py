@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from . import llm, retrieval
-from .agents import flashcards, generate, planner, quiz, tutor
+from .agents import flashcards, generate, mock, planner, quiz, tutor
 from .config import CORS_ORIGINS, SUBJECTS
 from .db import init_db
 
@@ -143,4 +143,62 @@ def review(card_id: int, b: Review, x_learner_id: str | None = Header(None)):
     r = flashcards.review(learner_id(x_learner_id), card_id, max(0, min(5, b.quality)))
     if not r:
         raise HTTPException(404, "Card not found")
+    return r
+
+
+class MockStart(BaseModel):
+    preset: str = "quick"
+
+
+class MockAnswer(BaseModel):
+    question_id: str
+    choice: int | None = None
+
+
+@app.post("/mock/start")
+def mock_start(b: MockStart, x_learner_id: str | None = Header(None)):
+    if b.preset not in mock.PRESETS:
+        raise HTTPException(400, f"preset must be one of {list(mock.PRESETS)}")
+    m = mock.start(learner_id(x_learner_id), b.preset)
+    if not m:
+        raise HTTPException(404, "No questions available yet")
+    return m
+
+
+@app.get("/mock/history")
+def mock_history(x_learner_id: str | None = Header(None)):
+    return mock.history(learner_id(x_learner_id))
+
+
+@app.get("/mock/{mock_id}")
+def mock_get(mock_id: str, x_learner_id: str | None = Header(None)):
+    m = mock.view(learner_id(x_learner_id), mock_id)
+    if not m:
+        raise HTTPException(404, "Mock not found")
+    return m
+
+
+@app.put("/mock/{mock_id}/answer")
+def mock_answer(mock_id: str, b: MockAnswer, x_learner_id: str | None = Header(None)):
+    r = mock.answer(learner_id(x_learner_id), mock_id, b.question_id, b.choice)
+    if r == "missing":
+        raise HTTPException(404, "Mock not found")
+    if r == "closed":
+        raise HTTPException(409, "Time is up or the exam was submitted")
+    return {"ok": True}
+
+
+@app.post("/mock/{mock_id}/submit")
+def mock_submit(mock_id: str, x_learner_id: str | None = Header(None)):
+    r = mock.submit(learner_id(x_learner_id), mock_id)
+    if not r:
+        raise HTTPException(404, "Mock not found")
+    return r
+
+
+@app.get("/mock/{mock_id}/result")
+def mock_result(mock_id: str, x_learner_id: str | None = Header(None)):
+    r = mock.result(learner_id(x_learner_id), mock_id)
+    if not r:
+        raise HTTPException(404, "Mock not found")
     return r

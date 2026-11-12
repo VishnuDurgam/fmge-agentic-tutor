@@ -108,3 +108,28 @@ def test_medmcqa_import(tmp_path, monkeypatch):
         assert row["subject"] == "Obstetrics and Gynaecology" and row["answer"] == 1
         assert c.execute("SELECT COUNT(*) n FROM questions WHERE id='mm-a2'").fetchone()["n"] == 0
     assert (tmp_path / "raw" / "medmcqa" / "Obstetrics_and_Gynaecology.md").exists()
+
+
+def test_mock_exam_flow():
+    import time
+
+    from app.db import conn
+    with TestClient(app) as c:
+        m = c.post("/mock/start", json={"preset": "quick"}, headers=H).json()
+        assert m["total"] >= 1 and m["seconds_left"] > 1100 and "answer" not in m["questions"][0]
+        assert c.get(f"/mock/{m['id']}/result", headers=H).json()["status"] == "in_progress"
+        q0 = m["questions"][0]
+        assert c.put(f"/mock/{m['id']}/answer", json={"question_id": q0["id"], "choice": 1}, headers=H).status_code == 200
+        r = c.post(f"/mock/{m['id']}/submit", headers=H).json()
+        assert r["status"] == "submitted" and r["total"] == m["total"] and r["answered"] == 1
+        assert r["review"][0]["explanation"] and 0 <= r["score"] <= 1
+        # answers are rejected after submit, and other learners cannot see the exam
+        assert c.put(f"/mock/{m['id']}/answer", json={"question_id": q0["id"], "choice": 0}, headers=H).status_code == 409
+        assert c.get(f"/mock/{m['id']}", headers={"X-Learner-Id": "someone-else"}).status_code == 404
+        # time expiry auto-submits
+        m2 = c.post("/mock/start", json={"preset": "quick"}, headers=H).json()
+        with conn() as db:
+            db.execute("UPDATE mocks SET started=? WHERE id=?", (int(time.time()) - 99999, m2["id"]))
+        assert c.get(f"/mock/{m2['id']}", headers=H).json()["status"] == "submitted"
+        assert c.put(f"/mock/{m2['id']}/answer", json={"question_id": q0["id"], "choice": 0}, headers=H).status_code == 409
+        assert c.post("/mock/start", json={"preset": "nope"}, headers=H).status_code == 400
