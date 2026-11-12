@@ -87,3 +87,24 @@ def test_header_parsing():
     from app.ingest import split_header
     meta, body = split_header("source: X\ntitle: Y\n\nhello", "f.md")
     assert meta == {"source": "X", "title": "Y"} and body.strip() == "hello"
+
+
+def test_medmcqa_import(tmp_path, monkeypatch):
+    import json
+
+    import app.import_medmcqa as imp
+    f = tmp_path / "train.json"
+    rows = [
+        {"id": "a1", "question": "Drug of choice for eclampsia?", "opa": "Diazepam", "opb": "MgSO4", "opc": "Phenytoin",
+         "opd": "Labetalol", "cop": 1, "exp": "MgSO4 is used.", "subject_name": "Gynaecology & Obstetrics", "topic_name": "Eclampsia"},
+        {"id": "a2", "question": "Dental q", "opa": "a", "opb": "b", "opc": "c", "opd": "d", "cop": 0, "exp": "x", "subject_name": "Dental", "topic_name": "t"},
+    ]
+    f.write_text("\n".join(json.dumps(r) for r in rows))
+    monkeypatch.setattr(imp, "CONTENT_DIR", tmp_path)
+    imp.main(str(f), 10)
+    from app.db import conn
+    with conn() as c:
+        row = c.execute("SELECT subject, answer FROM questions WHERE id='mm-a1'").fetchone()
+        assert row["subject"] == "Obstetrics and Gynaecology" and row["answer"] == 1
+        assert c.execute("SELECT COUNT(*) n FROM questions WHERE id='mm-a2'").fetchone()["n"] == 0
+    assert (tmp_path / "raw" / "medmcqa" / "Obstetrics_and_Gynaecology.md").exists()
