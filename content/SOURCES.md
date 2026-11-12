@@ -33,5 +33,9 @@ Not used (no licence file, so all rights reserved by default). Ask the owner for
 - vanderbilt-internal-medicine/vanderbilt-internal-medicine.github.io: internal medicine handbook, US-oriented.
 - MedPocket/OxfordMH, MedPocket/BRS, MedPocket/medlib: look like copies of commercial books. Avoid.
 
+## Private-use material
+`FMGE-REPO` (community Anki deck, OBGYN, 171 cards) is converted by `content/tools/anki_to_notes.py` into `content/raw/local-private/`. That folder is git-ignored and docker-ignored, so it works on your own machine but is never committed or deployed. To put it in the public app, get the owner's written permission first (open an issue on the repo).
+MedPocket repos are not used: they appear to host copies of commercial books.
+
 ## Adding your own material
 Put notes or PDFs you own in `content/raw/` and run `python -m app.ingest`.
