@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 
-type Turn = { q: string; a: string; sources: { source: string; snippet: string }[] };
+type Turn = { q: string; a: string; lib: boolean; sources: { source: string; title: string; snippet: string }[] };
 
 export default function Chat() {
   const [q, setQ] = useState("");
@@ -14,8 +14,8 @@ export default function Chat() {
     if (!q.trim()) return;
     setBusy(true); setErr("");
     try {
-      const r = await api<{ answer: string; sources: Turn["sources"] }>("/tutor/ask", { method: "POST", body: JSON.stringify({ question: q }) });
-      setTurns([{ q, a: r.answer, sources: r.sources }, ...turns]);
+      const r = await api<{ answer: string; from_library: boolean; sources: Turn["sources"] }>("/tutor/ask", { method: "POST", body: JSON.stringify({ question: q }) });
+      setTurns([{ q, a: r.answer, lib: r.from_library, sources: r.sources }, ...turns]);
       setQ("");
     } catch (e) { setErr(String(e)); }
     setBusy(false);
@@ -33,7 +33,7 @@ export default function Chat() {
         <div className="card" key={i}>
           <div className="me">{t.q}</div>
           <div className="msg">{t.a}</div>
-          {t.sources.length > 0 && <div className="muted">Sources: {t.sources.map((s) => s.source).join(", ")}</div>}
+          {t.lib ? <div className="muted">From library: {t.sources.map((s) => `${s.title} (${s.source})`).join("; ")}</div> : <div className="notice">Not found in the library. This is a general answer, verify it.</div>}
         </div>
       ))}
     </>

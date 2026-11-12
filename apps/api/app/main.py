@@ -2,8 +2,8 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from . import llm
-from .agents import flashcards, planner, quiz, tutor
+from . import llm, retrieval
+from .agents import flashcards, generate, planner, quiz, tutor
 from .config import CORS_ORIGINS, SUBJECTS
 from .db import init_db
 
@@ -116,7 +116,26 @@ def add_card(b: CardIn, x_learner_id: str | None = Header(None)):
 
 @app.post("/cards/generate")
 def gen_cards(b: Gen, x_learner_id: str | None = Header(None)):
-    return flashcards.generate(learner_id(x_learner_id), b.topic, b.subject, min(b.n, 10))
+    return generate.cards(learner_id(x_learner_id), b.topic, min(b.n, 10))
+
+
+class GenQ(BaseModel):
+    topic: str = ""
+    n: int = 5
+
+
+@app.post("/quiz/generate")
+def gen_questions(b: GenQ, x_learner_id: str | None = Header(None)):
+    learner_id(x_learner_id)
+    if not llm.available():
+        raise HTTPException(503, "Add a free GEMINI_API_KEY or GROQ_API_KEY on the server to generate questions")
+    return generate.questions(b.topic or None, min(b.n, 10))
+
+
+@app.get("/library/stats")
+def library_stats():
+    chunks, _ = retrieval._index()
+    return {"chunks": len(chunks), "sources": sorted({c["source"] for c in chunks})}
 
 
 @app.post("/cards/{card_id}/review")

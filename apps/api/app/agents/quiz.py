@@ -52,4 +52,4 @@ def submit(learner: str, question_id: str, choice: int):
             "You are an FMGE tutor. In 3 sentences explain why the chosen option is wrong and the key to remember.",
             f"Q: {q['stem']}\nOptions: {opts}\nCorrect: {opts[q['answer']]}\nChosen: {opts[choice]}")
     return {"correct": bool(ok), "answer": q["answer"], "explanation": q["explanation"],
-            "ai_feedback": extra, "reviewed": bool(q["reviewed"])}
+            "ai_feedback": extra, "reviewed": bool(q["reviewed"]), "source": q["source"]}

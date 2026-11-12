@@ -15,5 +15,10 @@ NBEMS does not officially release FMGE papers. Papers online are memory-based an
 - NCBI Bookshelf (check each title's licence; StatPearls chapters are CC BY-NC-ND, so use for reference/linking, not remixing): https://www.ncbi.nlm.nih.gov/books/
 - Open Textbook Library, Medicine and health: https://open.umn.edu/opentextbooks/
 
+## How the library is built
+`python content/tools/fetch_open_books.py` downloads OpenStax Anatomy and Physiology 2e and Microbiology (CC BY 4.0) from GitHub, `python -m app.ingest` indexes them (about 7,000 passages), and the tutor and question generator work only from those passages. Every answer and generated question carries its book and section as the source. Attribution to OpenStax / Rice University is required and is shown in the app.
+
+Gaps: OpenStax does not cover clinical subjects (Medicine, Surgery, OBG, Paediatrics, Pharmacology, Pathology, Forensic Medicine, Community Medicine, etc.). Fill those with your brother's notes and any other material you are allowed to use, in `content/raw/`.
+
 ## Adding your own material
 Put notes or PDFs you own in `content/raw/` and run `python -m app.ingest`.

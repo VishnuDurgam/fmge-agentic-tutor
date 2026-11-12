@@ -1,5 +1,6 @@
 """Ingest PDFs / text / markdown from content/raw into content/chunks.jsonl for retrieval.
 
+Files may start with header lines 'source: ...' and 'title: ...' (see content/tools/fetch_open_books.py).
 Usage: python -m app.ingest [path ...]   (defaults to everything in content/raw)
 Only ingest material you have the right to use (see content/SOURCES.md).
 """
@@ -17,6 +18,17 @@ def read(path: Path) -> str:
     return path.read_text(errors="ignore")
 
 
+def split_header(text: str, default_source: str):
+    meta = {"source": default_source, "title": ""}
+    lines = text.split("\n")
+    i = 0
+    while i < len(lines) and lines[i].split(":", 1)[0] in meta and ":" in lines[i]:
+        k, v = lines[i].split(":", 1)
+        meta[k] = v.strip()
+        i += 1
+    return meta, "\n".join(lines[i:])
+
+
 def chunk(text: str, size=900, overlap=150):
     text = " ".join(text.split())
     i = 0
@@ -26,15 +38,16 @@ def chunk(text: str, size=900, overlap=150):
 
 
 def main(paths):
-    files = [Path(p) for p in paths] or [p for p in (CONTENT_DIR / "raw").rglob("*") if p.is_file()]
+    files = [Path(p) for p in paths] or [p for p in sorted((CONTENT_DIR / "raw").rglob("*")) if p.is_file()]
     out = CONTENT_DIR / "chunks.jsonl"
     n = 0
     with out.open("w") as f:
         for p in files:
             if p.suffix.lower() not in {".pdf", ".txt", ".md"}:
                 continue
-            for c in chunk(read(p)):
-                f.write(json.dumps({"source": p.name, "text": c}) + "\n")
+            meta, body = split_header(read(p), p.name)
+            for c in chunk(body):
+                f.write(json.dumps({"source": meta["source"], "title": meta["title"], "text": c}) + "\n")
                 n += 1
     print(f"Wrote {n} chunks from {len(files)} files to {out}")
 

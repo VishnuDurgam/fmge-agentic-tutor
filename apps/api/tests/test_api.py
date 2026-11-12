@@ -55,3 +55,35 @@ def test_tutor_retrieval(tmp_path, monkeypatch):
         out = c.post("/tutor/ask", json={"question": "antidote for magnesium toxicity"}, headers=H).json()
         assert out["sources"] and "calcium gluconate" in out["sources"][0]["snippet"]
     r.reload()
+
+
+def test_generate_questions_from_library(tmp_path, monkeypatch):
+    import json
+
+    import app.agents.generate as gen
+    import app.ingest as ing
+    import app.retrieval as r
+    monkeypatch.setattr(r, "CONTENT_DIR", tmp_path)
+    monkeypatch.setattr(ing, "CONTENT_DIR", tmp_path)
+    (tmp_path / "raw").mkdir()
+    (tmp_path / "raw" / "a.md").write_text(
+        "source: Test Book (CC BY)\ntitle: Heart\n\nThe sinoatrial node is the pacemaker of the heart.")
+    ing.main([])
+    r.reload()
+    fake = json.dumps([{"subject": "Physiology", "topic": "Heart", "stem": "Pacemaker of the heart?",
+                        "options": ["SA node", "AV node", "Purkinje", "Bundle of His"], "answer": 0,
+                        "explanation": "SA node sets the rate."}])
+    monkeypatch.setattr(gen.llm, "available", lambda: True)
+    monkeypatch.setattr(gen.llm, "complete", lambda *a, **k: fake)
+    with TestClient(app) as c:
+        made = gen.questions("sinoatrial pacemaker", 1)
+        assert made and made[0]["source"] == "Test Book (CC BY) / Heart"
+        stats = c.get("/library/stats").json()
+        assert stats["chunks"] >= 1
+    r.reload()
+
+
+def test_header_parsing():
+    from app.ingest import split_header
+    meta, body = split_header("source: X\ntitle: Y\n\nhello", "f.md")
+    assert meta == {"source": "X", "title": "Y"} and body.strip() == "hello"

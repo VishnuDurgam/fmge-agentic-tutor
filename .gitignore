@@ -11,3 +11,5 @@ content/chunks.jsonl
 # copyrighted books and PDFs must never be committed
 content/raw/*.pdf
 content/raw/*.epub
+# downloaded open books are rebuilt by content/tools/fetch_open_books.py
+content/raw/openstax-*/

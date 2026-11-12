@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
 type Q = { id: string; subject: string; topic: string; stem: string; options: string[]; reviewed: boolean };
-type R = { correct: boolean; answer: number; explanation: string; ai_feedback: string };
+type R = { correct: boolean; answer: number; explanation: string; ai_feedback: string; reviewed: boolean; source?: string };
 
 export default function Practice() {
   const [subjects, setSubjects] = useState<string[]>([]);
@@ -12,6 +12,8 @@ export default function Practice() {
   const [picked, setPicked] = useState<number | null>(null);
   const [res, setRes] = useState<R | null>(null);
   const [err, setErr] = useState("");
+  const [topic, setTopic] = useState("");
+  const [gen, setGen] = useState("");
 
   async function load(s = subject) {
     setPicked(null); setRes(null); setErr("");
@@ -26,6 +28,15 @@ export default function Practice() {
     setRes(await api<R>("/quiz/submit", { method: "POST", body: JSON.stringify({ question_id: q.id, choice: i }) }));
   }
 
+  async function generate() {
+    setGen("Reading the books and writing questions...");
+    try {
+      const r = await api<unknown[]>("/quiz/generate", { method: "POST", body: JSON.stringify({ topic, n: 5 }) });
+      setGen(`Added ${r.length} new draft questions from the library`);
+      load();
+    } catch (e) { setGen(String(e)); }
+  }
+
   return (
     <>
       <h2>Practice</h2>
@@ -33,6 +44,11 @@ export default function Practice() {
         <option value="">All subjects (adaptive)</option>
         {subjects.map((s) => <option key={s}>{s}</option>)}
       </select>
+      <div className="card">
+        <strong>Make new questions from the books</strong>
+        <div className="row"><input style={{ flex: 1 }} value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Topic, e.g. cardiac output (blank = random)" /><button onClick={generate}>Generate 5</button></div>
+        {gen && <p className="muted">{gen}</p>}
+      </div>
       {err && <p className="muted">{err}</p>}
       {q && (
         <div className="card">
@@ -48,6 +64,7 @@ export default function Practice() {
               <p><strong>{res.correct ? "Correct" : "Incorrect"}</strong>. {res.explanation}</p>
               {res.ai_feedback && <p className="msg">{res.ai_feedback}</p>}
               {!q.reviewed && <div className="notice">Draft question, not yet reviewed by a doctor. Verify before relying on it.</div>}
+              {res.source && <p className="muted">Source: {res.source}</p>}
               <p><button onClick={() => load()}>Next question</button></p>
             </>
           )}

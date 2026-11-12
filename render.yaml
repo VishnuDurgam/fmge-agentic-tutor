@@ -4,11 +4,13 @@ services:
     runtime: docker
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: .
-    plan: starter
+    plan: starter  # free web plans have no persistent disk; see README
     healthCheckPath: /health
     disk: { name: fmge-data, mountPath: /data, sizeGB: 1 }
     envVars:
-      - key: ANTHROPIC_API_KEY
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
         sync: false
       - key: CORS_ORIGINS
         value: https://YOUR-WEB.vercel.app

@@ -1,8 +1,6 @@
 """SM-2 spaced repetition plus AI card generation from a topic or pasted notes."""
-import json
 from datetime import date, timedelta
 
-from .. import llm
 from ..db import conn
 
 
@@ -40,16 +38,3 @@ def review(learner, card_id, quality):
         c.execute("UPDATE cards SET ease=?, interval=?, reps=?, due=? WHERE id=?",
                   (ease, interval, reps, nxt, card_id))
     return {"next_due": nxt, "interval": interval}
-
-
-def generate(learner, topic, subject="", n=5):
-    if not llm.available():
-        return []
-    raw = llm.complete(
-        "Make FMGE flashcards. Reply ONLY with a JSON list of {\"front\":..., \"back\":...}; one fact per card.",
-        f"Topic: {topic} ({subject}). Make {n} high-yield cards.", max_tokens=1200)
-    try:
-        cards = json.loads(raw[raw.index("["): raw.rindex("]") + 1])
-    except ValueError:
-        return []
-    return [{"id": add_card(learner, x["front"], x["back"], subject), **x} for x in cards[:n]]
