@@ -50,8 +50,10 @@ def questions(topic: str | None = None, n: int = 5, source: str | None = None, l
     for p in passages(topic, max(1, n) * 3, source, learner):
         if len(made) >= n:
             break
-        raw = llm.complete(QSYS, f"Passage ({p['source']} / {p.get('title','')}):\n{p['text']}\n\nWrite 1 MCQ.", 900)
-        for q in _json_list(raw)[:1]:
+        raw = llm.complete(QSYS, f"Passage ({p['source']} / {p.get('title','')}):\n{p['text']}\n\nWrite 2 different MCQs.", 1400)
+        for q in _json_list(raw)[:2]:
+            if len(made) >= n:
+                break
             if not _valid(q):
                 continue
             owner = p.get("owner")

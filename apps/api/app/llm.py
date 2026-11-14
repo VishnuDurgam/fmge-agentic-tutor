@@ -73,7 +73,9 @@ def _try(p, system, user, max_tokens):
                 return _anthropic(system, user, max_tokens)
             return _ollama(system, user, max_tokens) if p == LOCAL else _openai_compat(p, system, user, max_tokens)
         except Exception as e:  # noqa: BLE001
-            if not any(c in str(e) for c in (" 503", " 429", "timed out", "Timeout")) or wait == 15:
+            msg = str(e)
+            out_of_quota = "quota" in msg.lower()  # a used-up quota will not recover in seconds, so move on to the next provider
+            if out_of_quota or not any(c in msg for c in (" 503", " 429", "timed out", "Timeout")) or wait == 15:
                 raise
 
 
