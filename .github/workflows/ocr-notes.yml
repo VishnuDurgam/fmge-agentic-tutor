@@ -2,6 +2,8 @@ name: Read notes
 on:
   push:
     paths: ["content/notes/**"]
+  schedule:
+    - cron: "0 22 * * 0"
   workflow_dispatch:
 permissions:
   contents: write
@@ -13,8 +15,20 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install pymupdf pytesseract pillow
+      - run: pip install pymupdf pytesseract pillow gdown
+      - name: Download Drive links
+        run: |
+          mkdir -p /tmp/drive
+          grep -v '^\s*#' content/notes/links.txt | grep -v '^\s*$' | while read -r url; do
+            echo "fetching $url"
+            if echo "$url" | grep -q '/folders/'; then
+              gdown --folder --remaining-ok "$url" -O /tmp/drive || echo "could not read folder (is it shared with anyone who has the link?)"
+            else
+              gdown --fuzzy "$url" -O /tmp/drive/ || echo "could not read file (is it shared with anyone who has the link?)"
+            fi
+          done || true
       - run: python content/tools/ocr_notes.py
+      - run: python content/tools/ocr_notes.py /tmp/drive
       - name: Save the text to the repository
         run: |
           git config user.name "notes-bot"
