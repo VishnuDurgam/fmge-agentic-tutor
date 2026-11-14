@@ -13,7 +13,7 @@ export function learnerId(): string {
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(BASE + path, {
     ...init,
-    headers: { "Content-Type": "application/json", "X-Learner-Id": learnerId(), "X-Access-Code": typeof window === "undefined" ? "" : localStorage.getItem("fmge_code") || "", ...(init.headers || {}) },
+    headers: { ...(init.body instanceof FormData ? {} : { "Content-Type": "application/json" }), "X-Learner-Id": learnerId(), "X-Access-Code": typeof window === "undefined" ? "" : localStorage.getItem("fmge_code") || "", ...(init.headers || {}) },
   });
   if (!res.ok) throw new Error((await res.text()) || res.statusText);
   return res.json();

@@ -1,9 +1,9 @@
 """OCR scanned PDFs (course workbooks etc.) into searchable text. PRIVATE USE ONLY.
 
-Run this on YOUR computer, not on a server. Output goes to content/raw/local-private/, which is
+Run this on YOUR computer, not on a server. Output goes to content/raw/offline/, which is
 git-ignored and docker-ignored, so the text never reaches GitHub or a public deployment.
 
-Setup:  pip install -r apps/api/requirements-private.txt   and install Tesseract OCR
+Setup:  pip install -r apps/api/requirements.txt   and install Tesseract OCR
         (Windows: github.com/UB-Mannheim/tesseract/wiki, macOS: brew install tesseract, Linux: apt install tesseract-ocr)
 Usage:  python content/tools/ocr_pdf.py "Physiology FMGE Workbook.pdf" "Physiology workbook (private)" [--dpi 150] [--pages 1-50]
 Large PDFs take a while (roughly 1 to 3 seconds per page). It resumes by skipping pages already done.
@@ -17,7 +17,7 @@ import pymupdf as fitz  # PyMuPDF
 import pytesseract
 from PIL import Image
 
-OUT = Path(__file__).resolve().parents[1] / "raw" / "local-private"
+OUT = Path(__file__).resolve().parents[1] / "raw" / "offline"
 
 
 def page_range(spec: str | None, n: int):

@@ -13,4 +13,4 @@ content/raw/*.pdf
 content/raw/*.epub
 # downloaded open books are rebuilt by content/tools/fetch_open_books.py
 content/raw/openstax-*/
-content/raw/local-private/
+content/raw/offline/

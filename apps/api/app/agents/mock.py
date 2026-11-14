@@ -17,16 +17,20 @@ PRESETS = {
     "part_b": (150, 150, PART_B),
     "section": (50, 50, PART_A + PART_B),
     "quick": (20, 20, PART_A + PART_B),
+    "my_material": (20, 20, None),  # questions made from the learner's own uploads
 }
 GRACE_S = 5
 
 
-def _pick(n, subjects):
+def _pick(n, subjects, learner=None):
     with conn() as c:
-        rows = c.execute("SELECT id, subject FROM questions").fetchall()
+        if subjects is None:  # "my material": only the learner's own questions
+            rows = c.execute("SELECT id, subject FROM questions WHERE owner=?", (learner,)).fetchall()
+        else:
+            rows = c.execute("SELECT id, subject FROM questions WHERE owner IS NULL OR owner=?", (learner,)).fetchall()
     by = {}
     for r in rows:
-        if r["subject"] in subjects:
+        if subjects is None or r["subject"] in subjects:
             by.setdefault(r["subject"], []).append(r["id"])
     for v in by.values():
         random.shuffle(v)
@@ -41,7 +45,7 @@ def _pick(n, subjects):
 
 def start(learner, preset="quick"):
     n, minutes, subjects = PRESETS[preset]
-    ids = _pick(n, subjects)
+    ids = _pick(n, subjects, learner)
     if not ids:
         return None
     mid = uuid.uuid4().hex[:12]

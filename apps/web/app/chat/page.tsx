@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
 type Turn = { q: string; a: string; lib: boolean; sources: { source: string; title: string; snippet: string }[] };
@@ -9,12 +9,14 @@ export default function Chat() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [source, setSource] = useState("");
+  useEffect(() => { setSource(new URLSearchParams(window.location.search).get("source") || ""); }, []);
 
   async function send() {
     if (!q.trim()) return;
     setBusy(true); setErr("");
     try {
-      const r = await api<{ answer: string; from_library: boolean; sources: Turn["sources"] }>("/tutor/ask", { method: "POST", body: JSON.stringify({ question: q }) });
+      const r = await api<{ answer: string; from_library: boolean; sources: Turn["sources"] }>("/tutor/ask", { method: "POST", body: JSON.stringify({ question: q, source }) });
       setTurns([{ q, a: r.answer, lib: r.from_library, sources: r.sources }, ...turns]);
       setQ("");
     } catch (e) { setErr(String(e)); }
@@ -24,6 +26,7 @@ export default function Chat() {
   return (
     <>
       <h2>AI Tutor</h2>
+      {source && <div className="notice">Answering from: {source} <button onClick={() => setSource("")}>Use everything</button></div>}
       <div className="row">
         <input style={{ flex: 1, minWidth: 200 }} value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. Antidote for magnesium toxicity?" onKeyDown={(e) => e.key === "Enter" && send()} />
         <button onClick={send} disabled={busy}>{busy ? "Thinking..." : "Ask"}</button>

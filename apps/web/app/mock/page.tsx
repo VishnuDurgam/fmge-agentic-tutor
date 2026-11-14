@@ -12,6 +12,7 @@ type Result = {
 
 const PRESETS: [string, string, string][] = [
   ["quick", "Quick test", "20 questions, 20 minutes"],
+  ["my_material", "My material", "20 questions made from what you uploaded"],
   ["section", "Section", "50 questions, 50 minutes"],
   ["part_a", "Part A (pre and para-clinical)", "150 questions, 150 minutes"],
   ["part_b", "Part B (clinical)", "150 questions, 150 minutes"],

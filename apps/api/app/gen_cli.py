@@ -14,8 +14,6 @@ if __name__ == "__main__":
     n = int(args[-1]) if args and args[-1].isdigit() else 10
     out = generate.questions(topic, n, source)
     made = out["made"]
-    if out["skipped_private"]:
-        print(f"Skipped {out['skipped_private']} private passages: set OLLAMA_MODEL to use a local model")
     print(f"Generated {len(made)} draft questions (unreviewed)")
     for m in made:
         print("-", m["subject"], "|", m["stem"][:80], "|", m["source"])

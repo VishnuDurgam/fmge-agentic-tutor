@@ -1,12 +1,13 @@
 import hmac
 import os
 
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from . import llm, retrieval
+from . import library
 from .agents import flashcards, generate, mock, planner, quiz, tutor
 from .config import CORS_ORIGINS, SUBJECTS
 from .db import init_db
@@ -44,6 +45,7 @@ def learner_id(x_learner_id: str | None) -> str:
 class Ask(BaseModel):
     question: str
     subject: str = ""
+    source: str = ""
 
 
 class Submit(BaseModel):
@@ -84,8 +86,7 @@ def subjects():
 
 @app.post("/tutor/ask")
 def ask(b: Ask, x_learner_id: str | None = Header(None)):
-    learner_id(x_learner_id)
-    return tutor.ask(b.question, b.subject)
+    return tutor.ask(b.question, b.subject, learner_id(x_learner_id), b.source)
 
 
 @app.get("/quiz/next")
@@ -146,22 +147,49 @@ class GenQ(BaseModel):
 
 @app.post("/quiz/generate")
 def gen_questions(b: GenQ, x_learner_id: str | None = Header(None)):
-    learner_id(x_learner_id)
-    if not llm.available() and not llm.available(True):
+    me = learner_id(x_learner_id)
+    if not llm.available():
         raise HTTPException(503, "Add a free GEMINI_API_KEY or GROQ_API_KEY (or a local OLLAMA_MODEL) on the server to generate questions")
-    out = generate.questions(b.topic or None, min(b.n, 20), b.source or None)
-    if not out["made"] and out["skipped_private"]:
-        raise HTTPException(409, "That material is private. Set OLLAMA_MODEL to use a local model so it stays on this computer.")
-    return out
+    return generate.questions(b.topic or None, min(b.n, 20), b.source or None, me)
 
 
 @app.get("/library/stats")
-def library_stats():
+def library_stats(x_learner_id: str | None = Header(None)):
     chunks, _ = retrieval._index()
-    sources = {}
-    for c in chunks:
-        sources.setdefault(c["source"], bool(c.get("private")))
-    return {"chunks": len(chunks), "sources": [{"name": k, "private": v} for k, v in sorted(sources.items())]}
+    shared = sorted({c["source"] for c in chunks})
+    mine = library.source_names(learner_id(x_learner_id))
+    return {"chunks": len(chunks), "sources": [{"name": n, "mine": False} for n in shared]
+            + [{"name": n, "mine": True} for n in sorted(set(mine))]}
+
+
+@app.post("/library/upload")
+async def library_upload(file: UploadFile = File(...), x_learner_id: str | None = Header(None)):
+    me = learner_id(x_learner_id)
+    data = await file.read()
+    if len(data) > library.MAX_UPLOAD_MB * 1024 * 1024:
+        raise HTTPException(413, f"File is larger than {library.MAX_UPLOAD_MB} MB")
+    return {"id": library.ingest_bytes(me, file.filename or "upload", data)}
+
+
+class LinkIn(BaseModel):
+    url: str
+
+
+@app.post("/library/link")
+def library_link(b: LinkIn, x_learner_id: str | None = Header(None)):
+    return {"id": library.ingest_link(learner_id(x_learner_id), b.url.strip())}
+
+
+@app.get("/library/docs")
+def library_docs(x_learner_id: str | None = Header(None)):
+    return library.list_docs(learner_id(x_learner_id))
+
+
+@app.delete("/library/docs/{doc_id}")
+def library_delete(doc_id: str, x_learner_id: str | None = Header(None)):
+    if not library.delete_doc(learner_id(x_learner_id), doc_id):
+        raise HTTPException(404, "Not found")
+    return {"ok": True}
 
 
 @app.post("/cards/{card_id}/review")

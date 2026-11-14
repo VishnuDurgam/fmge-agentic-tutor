@@ -4,9 +4,9 @@ services:
     runtime: docker
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: .
-    plan: starter  # free web plans have no persistent disk; see README
+    plan: free  # free: uploads are lost when the server restarts. For a persistent disk use plan: starter and uncomment `disk`.
     healthCheckPath: /health
-    disk: { name: fmge-data, mountPath: /data, sizeGB: 1 }
+    # disk: { name: fmge-data, mountPath: /data, sizeGB: 1 }
     envVars:
       - key: GEMINI_API_KEY
         sync: false

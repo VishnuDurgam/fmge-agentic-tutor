@@ -1,6 +1,6 @@
 """Convert an Anki .apkg deck into a text file the tutor can search. PRIVATE USE ONLY.
 
-Output goes to content/raw/local-private/, which is git-ignored and docker-ignored so the deck is never
+Output goes to content/raw/offline/, which is git-ignored and docker-ignored so the deck is never
 committed or deployed. Only use decks whose owners allow it.
 Usage: python content/tools/anki_to_notes.py "deck.apkg" "Source label"
 Needs: pip install zstandard
@@ -14,7 +14,7 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parents[1] / "raw" / "local-private"
+OUT = Path(__file__).resolve().parents[1] / "raw" / "offline"
 
 
 def clean(s: str) -> str:

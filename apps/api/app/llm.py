@@ -16,24 +16,22 @@ PROVIDERS = {
     "openrouter": ("https://openrouter.ai/api/v1", "OPENROUTER_API_KEY",
                    os.getenv("OPENROUTER_MODEL", "openai/gpt-oss-20b:free")),
 }
-LOCAL = "ollama"  # runs on your own computer, so private material never leaves it
+LOCAL = "ollama"  # optional: a model running on your own computer
 ORDER = [p.strip() for p in os.getenv("LLM_PROVIDERS", "ollama,gemini,groq,openrouter,anthropic").split(",") if p.strip()]
 
 
-def _active(private: bool = False):
+def _active():
     out = []
     for p in ORDER:
         if p == LOCAL and os.getenv("OLLAMA_MODEL"):
             out.append(p)
-        elif private and os.getenv("ALLOW_CLOUD_LLM_FOR_PRIVATE") != "1":
-            continue  # private material only goes to the local model unless you explicitly allow it
         elif (p == "anthropic" and os.getenv("ANTHROPIC_API_KEY")) or (p in PROVIDERS and os.getenv(PROVIDERS[p][1])):
             out.append(p)
     return out
 
 
-def available(private: bool = False) -> bool:
-    return bool(_active(private))
+def available() -> bool:
+    return bool(_active())
 
 
 def _openai_compat(provider, system, user, max_tokens):
@@ -63,11 +61,9 @@ def _anthropic(system, user, max_tokens):
     return "".join(b.text for b in msg.content if getattr(b, "text", None))
 
 
-def complete(system: str, user: str, max_tokens: int = 900, private: bool = False) -> str:
-    providers = _active(private)
+def complete(system: str, user: str, max_tokens: int = 900) -> str:
+    providers = _active()
     if not providers:
-        if private:
-            return "[private material: set OLLAMA_MODEL to use a local model, so your notes stay on this computer]\n\n" + user[:600]
         return "[offline mode: add a free GEMINI_API_KEY or GROQ_API_KEY for AI answers]\n\n" + user[:600]
     last = None
     for p in providers:  # fall through to the next free tier when one is rate limited

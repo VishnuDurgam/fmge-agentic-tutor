@@ -17,8 +17,8 @@ def topic_stats(learner: str):
 
 def next_question(learner: str, subject: str | None = None):
     with conn() as c:
-        qs = c.execute("SELECT * FROM questions" + (" WHERE subject=?" if subject else ""),
-                       (subject,) if subject else ()).fetchall()
+        qs = c.execute("SELECT * FROM questions WHERE (owner IS NULL OR owner=?)" + (" AND subject=?" if subject else ""),
+                       (learner, subject) if subject else (learner,)).fetchall()
         recent = {r["question_id"] for r in c.execute(
             "SELECT question_id FROM attempts WHERE learner=? ORDER BY id DESC LIMIT 20", (learner,))}
     if not qs:

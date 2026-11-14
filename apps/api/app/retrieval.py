@@ -37,3 +37,11 @@ def search(query: str, k: int = 4, source: str | None = None):
     hits = [i for i in range(len(chunks)) if q & set(_tok(chunks[i]["text"])) and (not source or chunks[i]["source"] == source)]
     top = sorted(hits, key=lambda i: scores[i], reverse=True)[:k]
     return [chunks[i] | {"score": float(scores[i])} for i in top]
+
+
+def search_all(query: str, k: int = 4, learner: str | None = None, source: str | None = None):
+    """Search the shared library plus this person's own uploads (uploads first)."""
+    from . import library
+    own = library.search_user(learner, query, k, source) if learner else []
+    shared = [] if (source and own) else search(query, k, source)
+    return (own[: max(1, (k + 1) // 2)] + shared)[:k] if own else shared

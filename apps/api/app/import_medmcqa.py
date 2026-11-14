@@ -57,7 +57,7 @@ def main(path: str, limit: int = 5000):
     count = 0
     with conn() as c:
         for q in load(Path(path), limit):
-            c.execute("INSERT OR IGNORE INTO questions VALUES (?,?,?,?,?,?,?,?,0)",
+            c.execute("INSERT OR IGNORE INTO questions (id, subject, topic, stem, options, answer, explanation, source, reviewed) VALUES (?,?,?,?,?,?,?,?,0)",
                       (q["id"], q["subject"], q["topic"], q["stem"], json.dumps(q["options"]),
                        q["answer"], q["explanation"], ATTRIBUTION))
             if not q["explanation"].startswith("No explanation"):

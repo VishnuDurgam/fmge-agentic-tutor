@@ -20,18 +20,20 @@ SYSTEM = (
 class State(TypedDict, total=False):
     question: str
     subject: str
+    learner: str
+    source: str
     context: list
     answer: str
 
 
 def retrieve(s: State) -> State:
-    return {"context": retrieval.search((s.get("subject", "") + " " + s["question"]).strip(), k=5)}
+    return {"context": retrieval.search_all((s.get("subject", "") + " " + s["question"]).strip(), 5, s.get("learner"), s.get("source") or None)}
 
 
 def answer(s: State) -> State:
     ctx = "\n\n".join(f"[{i+1}] {c['source']} / {c.get('title','')}: {c['text']}" for i, c in enumerate(s.get("context", [])))
     prompt = f"Library excerpts:\n{ctx or '(none found)'}\n\nQuestion: {s['question']}"
-    return {"answer": llm.complete(SYSTEM, prompt, 1000, private=any(c.get("private") for c in s.get("context", [])))}
+    return {"answer": llm.complete(SYSTEM, prompt, 1000)}
 
 
 def _build():
@@ -47,8 +49,8 @@ def _build():
 _graph = _build()
 
 
-def ask(question: str, subject: str = "") -> dict:
-    out = _graph.invoke({"question": question, "subject": subject})
+def ask(question: str, subject: str = "", learner: str = "", source: str = "") -> dict:
+    out = _graph.invoke({"question": question, "subject": subject, "learner": learner, "source": source})
     return {
         "answer": out["answer"],
         "from_library": bool(out.get("context")),

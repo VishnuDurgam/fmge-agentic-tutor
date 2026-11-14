@@ -46,9 +46,8 @@ def main(paths):
             if p.suffix.lower() not in {".pdf", ".txt", ".md"}:
                 continue
             meta, body = split_header(read(p), p.name)
-            private = "local-private" in p.parts
             for c in chunk(body):
-                f.write(json.dumps({"source": meta["source"], "title": meta["title"], "text": c, "private": private}) + "\n")
+                f.write(json.dumps({"source": meta["source"], "title": meta["title"], "text": c}) + "\n")
                 n += 1
     print(f"Wrote {n} chunks from {len(files)} files to {out}")
 

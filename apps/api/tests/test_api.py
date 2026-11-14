@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 
@@ -79,7 +80,7 @@ def test_generate_questions_from_library(tmp_path, monkeypatch):
         made = gen.questions("sinoatrial pacemaker", 1)["made"]
         assert made and made[0]["source"] == "Test Book (CC BY) / Heart"
         assert gen.questions("sinoatrial pacemaker", 1, source="Other Book")["made"] == []
-        stats = c.get("/library/stats").json()
+        stats = c.get("/library/stats", headers=H).json()
         assert stats["chunks"] >= 1
     r.reload()
 
@@ -146,24 +147,86 @@ def test_passcode_gate(monkeypatch):
         assert c.get("/quiz/next", headers={**H, "X-Access-Code": "letmein"}).status_code == 200
 
 
-def test_private_material_stays_off_cloud(tmp_path, monkeypatch):
+def _pdf(text=None, image_text=None):
+    import io
+
+    import pymupdf
+    from PIL import Image, ImageDraw
+    d = pymupdf.open()
+    pg = d.new_page()
+    if text:
+        pg.insert_text((72, 100), text)
+    if image_text:  # a scanned page: only pixels, no text layer
+        im = Image.new("RGB", (1600, 300), "white")
+        ImageDraw.Draw(im).text((40, 100), image_text, fill="black", font_size=70)
+        b = io.BytesIO()
+        im.save(b, "PNG")
+        pg.insert_image(pg.rect, stream=b.getvalue())
+    return d.tobytes()
+
+
+def test_upload_pdf_with_text_and_scanned_pages():
+    import app.library as lib
+    lib.RUN_SYNC = True
+    with TestClient(app) as c:
+        me = {"X-Learner-Id": "uploader"}
+        r = c.post("/library/upload", files={"file": ("notes.pdf", _pdf(text="The sinoatrial node paces the heart and sets sinus rhythm."), "application/pdf")}, headers=me)
+        assert r.status_code == 200
+        docs = c.get("/library/docs", headers=me).json()
+        assert docs[0]["status"] == "ready" and docs[0]["pages_done"] == 1
+        hits = lib.search_user("uploader", "sinoatrial node")
+        assert hits and "sinoatrial" in hits[0]["text"]
+        c.post("/library/upload", files={"file": ("scan.pdf", _pdf(image_text="Nephron filtration glomerulus"), "application/pdf")}, headers=me)
+        assert any("glomerulus" in h["text"].lower() for h in lib.search_user("uploader", "glomerulus"))
+        other = {"X-Learner-Id": "someone-else"}
+        assert lib.search_user("someone-else", "sinoatrial") == []
+        assert c.get("/library/docs", headers=other).json() == []
+        assert c.delete(f"/library/docs/{docs[-1]['id']}", headers=other).status_code == 404
+        assert c.delete(f"/library/docs/{docs[-1]['id']}", headers=me).status_code == 200
+
+
+def test_upload_text_and_unsupported_type():
+    import app.library as lib
+    lib.RUN_SYNC = True
+    with TestClient(app) as c:
+        me = {"X-Learner-Id": "u2"}
+        c.post("/library/upload", files={"file": ("a.txt", b"Warfarin inhibits vitamin K epoxide reductase.", "text/plain")}, headers=me)
+        c.post("/library/upload", files={"file": ("a.exe", b"x", "application/octet-stream")}, headers=me)
+        st = {d["name"]: d["status"] for d in c.get("/library/docs", headers=me).json()}
+        assert st == {"a.txt": "ready", "a.exe": "error"}
+
+
+def test_link_import_blocks_internal_addresses_and_reads_pages(monkeypatch):
+    import app.library as lib
+    lib.RUN_SYNC = True
+    with TestClient(app) as c:
+        me = {"X-Learner-Id": "u3"}
+        for bad in ("http://127.0.0.1:8000/health", "http://169.254.169.254/latest/meta-data", "file:///etc/passwd"):
+            c.post("/library/link", json={"url": bad}, headers=me)
+        docs = c.get("/library/docs", headers=me).json()
+        assert len(docs) == 3 and all(d["status"] == "error" for d in docs)
+        monkeypatch.setattr(lib, "fetch", lambda url, *a: (b"<html><body><script>x()</script><p>Insulin lowers blood glucose.</p></body></html>", "text/html", url))
+        c.post("/library/link", json={"url": "https://example.org/page"}, headers=me)
+        assert lib.search_user("u3", "insulin glucose")
+    assert lib.normalize_link("https://drive.google.com/file/d/ABC_123/view?usp=sharing") == "https://drive.google.com/uc?export=download&id=ABC_123"
+
+
+def test_questions_from_own_upload_stay_private_and_feed_mock(monkeypatch):
     import app.agents.generate as gen
-    import app.ingest as ing
-    import app.retrieval as r
-    monkeypatch.setattr(r, "CONTENT_DIR", tmp_path)
-    monkeypatch.setattr(ing, "CONTENT_DIR", tmp_path)
-    (tmp_path / "raw" / "local-private").mkdir(parents=True)
-    (tmp_path / "raw" / "local-private" / "w.md").write_text("source: Workbook (private)\ntitle: Heart\n\nThe sinoatrial node paces the heart.")
-    ing.main([])
-    r.reload()
-    for k in ("OLLAMA_MODEL", "ALLOW_CLOUD_LLM_FOR_PRIVATE"):
-        monkeypatch.delenv(k, raising=False)
-    monkeypatch.setenv("GEMINI_API_KEY", "cloud-key")
-    calls = []
-    monkeypatch.setattr(gen.llm, "complete", lambda *a, **k: calls.append(k) or "[]")
-    out = gen.questions("sinoatrial", 1)
-    assert out["made"] == [] and out["skipped_private"] >= 1 and calls == []  # nothing sent to the cloud
-    monkeypatch.setenv("OLLAMA_MODEL", "llama3.1:8b")
-    gen.questions("sinoatrial", 1)
-    assert calls and calls[0]["private"] is True  # local model path
-    r.reload()
+    import app.library as lib
+    lib.RUN_SYNC = True
+    monkeypatch.setenv("GEMINI_API_KEY", "k")
+    qjson = json.dumps([{"subject": "Physiology", "topic": "Heart", "stem": "Which structure paces the heart?",
+                         "options": ["SA node", "AV node", "Purkinje", "Bundle of His"], "answer": 0,
+                         "explanation": "The SA node has the fastest intrinsic rate."}])
+    monkeypatch.setattr(gen.llm, "complete", lambda *a, **k: qjson)
+    with TestClient(app) as c:
+        mine, theirs = {"X-Learner-Id": "u4"}, {"X-Learner-Id": "u5"}
+        c.post("/library/upload", files={"file": ("h.txt", b"The sinoatrial node paces the heart and sets the rhythm.", "text/plain")}, headers=mine)
+        out = c.post("/quiz/generate", json={"topic": "sinoatrial", "n": 1, "source": "h.txt"}, headers=mine).json()
+        assert len(out["made"]) == 1 and out["made"][0]["id"].startswith("own-")
+        m = c.post("/mock/start", json={"preset": "my_material"}, headers=mine).json()
+        assert m["total"] == 1
+        assert c.post("/mock/start", json={"preset": "my_material"}, headers=theirs).status_code == 404
+        seen = {c.get("/quiz/next", headers=theirs).json()["id"] for _ in range(30)}
+        assert out["made"][0]["id"] not in seen
