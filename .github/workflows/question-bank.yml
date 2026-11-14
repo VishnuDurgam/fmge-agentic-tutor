@@ -1,0 +1,33 @@
+name: Make questions
+on:
+  schedule:
+    - cron: "30 20 * * *"   # every day, 02:00 India time
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "How many questions to make"
+        default: "60"
+permissions:
+  contents: write
+jobs:
+  make:
+    runs-on: ubuntu-latest
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      DB_PATH: /tmp/bank.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r apps/api/requirements.txt
+      - run: python content/tools/fetch_open_books.py /tmp/books
+      - run: cd apps/api && python -m app.ingest
+      - run: cd apps/api && python -m app.build_bank ${{ github.event.inputs.count || '60' }}
+      - name: Save new questions to the repository
+        run: |
+          git config user.name "question-bot"
+          git config user.email "noreply@example.com"
+          git add content/seed/generated.json
+          git diff --cached --quiet || (git commit -m "Add generated questions" && git push)

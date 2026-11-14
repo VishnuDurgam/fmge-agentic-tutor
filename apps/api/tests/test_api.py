@@ -261,3 +261,23 @@ def test_options_shuffle_but_grading_stays_correct():
         res = c.post(f"/mock/{m['id']}/submit", headers=me).json()
         assert res["score"] == res["total"] == m["total"]
         assert all(r["chosen"] == r["answer"] for r in res["review"])
+
+
+def test_build_bank_saves_questions_for_next_deploy(tmp_path, monkeypatch):
+    import app.agents.generate as gen
+    import app.build_bank as bb
+    from app.db import conn
+    monkeypatch.setattr(bb, "OUT", tmp_path / "generated.json")
+    def fake(topic=None, n=5, source=None, learner=None):
+        with conn() as c:
+            c.execute("INSERT OR IGNORE INTO questions (id, subject, topic, stem, options, answer, explanation, source, reviewed, owner) "
+                      "VALUES ('gen-zz1','Physiology','Heart','Fake stem?',?,1,'why','Test Book',0,NULL)",
+                      (json.dumps(["a", "b", "c", "d"]),))
+        return {"made": [{"id": "gen-zz1"}]}
+    monkeypatch.setattr(gen, "questions", fake)
+    assert bb.main(1, 1) == 1
+    saved = json.loads((tmp_path / "generated.json").read_text())
+    ids = [q["id"] for q in saved]
+    assert "gen-zz1" in ids and next(q for q in saved if q["id"] == "gen-zz1")["options"] == ["a", "b", "c", "d"]
+    assert bb.main(1, 1) == 1  # running again does not duplicate
+    assert len(json.loads((tmp_path / "generated.json").read_text())) == len(ids)
