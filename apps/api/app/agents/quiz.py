@@ -1,5 +1,6 @@
 """Adaptive question selection: weight weak topics, avoid recent repeats, explain on demand."""
 import json
+import os
 import random
 
 from .. import llm, shuffle
@@ -57,7 +58,7 @@ def submit(learner: str, question_id: str, choice: int):
                   (learner, question_id, q["subject"], q["topic"], ok))
     opts = json.loads(q["options"])
     extra = ""
-    if not ok and llm.available():
+    if not ok and os.getenv("AI_FEEDBACK") == "1" and llm.available():  # off by default to save free AI quota
         extra = llm.complete(
             "You are an FMGE tutor. In 3 sentences explain why the chosen option is wrong and the key to remember.",
             f"Q: {q['stem']}\nOptions: {opts}\nCorrect: {opts[q['answer']]}\nChosen: {opts[orig_choice]}")
