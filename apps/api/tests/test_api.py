@@ -281,3 +281,16 @@ def test_build_bank_saves_questions_for_next_deploy(tmp_path, monkeypatch):
     assert "gen-zz1" in ids and next(q for q in saved if q["id"] == "gen-zz1")["options"] == ["a", "b", "c", "d"]
     assert bb.main(1, 1) == 1  # running again does not duplicate
     assert len(json.loads((tmp_path / "generated.json").read_text())) == len(ids)
+
+
+def test_private_chunks_hidden_without_code(monkeypatch):
+    from app import retrieval
+    chunks = [{"source": "Pub", "title": "", "text": "aspirin inhibits cox"}, {"source": "Priv", "title": "", "text": "aspirin secret private note", "private": True}]
+    from rank_bm25 import BM25Okapi
+    monkeypatch.setattr(retrieval, "_index", lambda: (chunks, BM25Okapi([retrieval._tok(c["text"]) for c in chunks])))
+    assert {h["source"] for h in retrieval.search("aspirin")} == {"Pub"}
+    tok = retrieval.unlocked.set(True)
+    try:
+        assert {h["source"] for h in retrieval.search("aspirin")} == {"Pub", "Priv"}
+    finally:
+        retrieval.unlocked.reset(tok)

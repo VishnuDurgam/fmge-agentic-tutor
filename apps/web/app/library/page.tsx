@@ -11,6 +11,8 @@ export default function Library() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [gen, setGen] = useState("");
+  const [code, setCode] = useState("");
+  useEffect(() => { setCode(localStorage.getItem("fmge_private") || ""); }, []);
 
   const refresh = useCallback(() => api<Doc[]>("/library/docs").then(setDocs).catch(() => {}), []);
   useEffect(() => { refresh(); }, [refresh]);
@@ -50,6 +52,14 @@ export default function Library() {
     <>
       <h2>My material</h2>
       <p className="muted">Add PDFs, photos of notes, text files or a web link. Scanned pages are read automatically. This stays with your device ID, and other people cannot see it.</p>
+      <div className="card">
+        <b>Private notes</b>
+        <p className="muted" style={{ margin: "4px 0" }}>If you were given a private code, enter it to use the private notes in the tutor, practice and mock exams.</p>
+        <div className="row">
+          <input type="password" placeholder="Private code" value={code} onChange={(e) => setCode(e.target.value)} style={{ flex: 1 }} />
+          <button onClick={() => { localStorage.setItem("fmge_private", code.trim()); setMsg(code.trim() ? "Private notes unlocked on this device." : "Private notes locked."); }}>Save</button>
+        </div>
+      </div>
       <div className="card">
         <label className="row" style={{ cursor: "pointer" }}>
           <input type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.md,application/pdf,image/*" onChange={(e) => { upload(e.target.files); e.target.value = ""; }} disabled={busy} style={{ flex: 1 }} />

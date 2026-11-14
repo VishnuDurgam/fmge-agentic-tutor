@@ -1,0 +1,32 @@
+# Copy this file into your PRIVATE notes repo as .github/workflows/read-notes.yml
+# Private repo layout: notes/ (PDFs, photos, txt), notes/links.txt (Drive links), text/ (made by this workflow)
+# Add a repository secret PUBLIC_REPO_NOTE: not needed, the OCR tool is fetched from the public repo below.
+name: Read private notes
+on:
+  push:
+    paths: ["notes/**"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  ocr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pymupdf pytesseract pillow gdown
+      - run: curl -fsSL https://raw.githubusercontent.com/VishnuDurgam/fmge-agentic-tutor/main/content/tools/ocr_notes.py -o /tmp/ocr_notes.py
+      - name: Download Drive links
+        run: |
+          mkdir -p /tmp/drive
+          [ -f notes/links.txt ] && grep -v '^\s*#' notes/links.txt | grep -v '^\s*$' | while read -r url; do
+            if echo "$url" | grep -q '/folders/'; then gdown --folder --remaining-ok "$url" -O /tmp/drive || true
+            else gdown --fuzzy "$url" -O /tmp/drive/ || true; fi
+          done || true
+      - run: python /tmp/ocr_notes.py notes text && python /tmp/ocr_notes.py /tmp/drive text
+      - run: |
+          git config user.name notes-bot && git config user.email noreply@example.com
+          git add text
+          git diff --cached --quiet || (git commit -m "Read notes" && git push)

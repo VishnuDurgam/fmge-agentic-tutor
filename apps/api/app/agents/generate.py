@@ -33,7 +33,7 @@ def passages(topic: str | None, k: int, source: str | None = None, learner: str 
     if topic:
         return retrieval.search_all(topic, k, learner, source)
     own = library.sample_user(learner, source, k) if learner else []
-    chunks, _ = retrieval._index()
+    chunks = retrieval.visible(retrieval._index()[0])
     pool = [c for c in chunks if not source or c["source"] == source]
     shared = random.sample(pool, min(k, len(pool))) if pool and not (source and own) else []
     out = own + shared

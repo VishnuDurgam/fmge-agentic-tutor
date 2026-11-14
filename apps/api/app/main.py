@@ -17,6 +17,16 @@ ACCESS_CODE = os.getenv("APP_PASSCODE", "")  # set this for a private deployment
 app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
 
 
+PRIVATE_CODE = os.getenv("PRIVATE_CODE", "")  # unlocks notes from the private repo (content/raw/private)
+
+
+@app.middleware("http")
+async def private_gate(request: Request, call_next):
+    sent = request.headers.get("x-private-code", "")
+    retrieval.unlocked.set(bool(PRIVATE_CODE) and hmac.compare_digest(sent.encode(), PRIVATE_CODE.encode()))
+    return await call_next(request)
+
+
 @app.middleware("http")
 async def passcode_gate(request: Request, call_next):
     if ACCESS_CODE and request.method != "OPTIONS" and request.url.path not in ("/health", "/docs", "/openapi.json"):
@@ -176,7 +186,7 @@ def gen_questions(b: GenQ, x_learner_id: str | None = Header(None)):
 
 @app.get("/library/stats")
 def library_stats(x_learner_id: str | None = Header(None)):
-    chunks, _ = retrieval._index()
+    chunks = retrieval.visible(retrieval._index()[0])
     shared = sorted({c["source"] for c in chunks})
     mine = library.source_names(learner_id(x_learner_id))
     return {"chunks": len(chunks), "sources": [{"name": n, "mine": False} for n in shared]

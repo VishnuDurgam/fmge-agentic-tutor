@@ -47,7 +47,10 @@ def main(paths):
                 continue
             meta, body = split_header(read(p), p.name)
             for c in chunk(body):
-                f.write(json.dumps({"source": meta["source"], "title": meta["title"], "text": c}) + "\n")
+                rec = {"source": meta["source"], "title": meta["title"], "text": c}
+                if "private" in p.parts:  # files under content/raw/private are only shown to people with the private code
+                    rec["private"] = True
+                f.write(json.dumps(rec) + "\n")
                 n += 1
     print(f"Wrote {n} chunks from {len(files)} files to {out}")
 
