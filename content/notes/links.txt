@@ -1,2 +1,4 @@
 # Paste Google Drive links here, one per line (files or folders).
 # Each must be shared as "Anyone with the link can view". Lines starting with # are ignored.
+https://drive.google.com/drive/folders/1nE3PB9yz0K5mWAcycYxqHCSGXtf1fDxJ?usp=drive_link
+https://drive.google.com/drive/folders/1NTpMdief0BFkGYmPopWB9_9SzdW0asPT?usp=drive_link
