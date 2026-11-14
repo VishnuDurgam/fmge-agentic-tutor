@@ -86,7 +86,75 @@ function Cards() {
   </ScrollView>);
 }
 
-const TABS = { Tutor, Practice, Planner, Cards };
+type MQ = { pos: number; id: string; subject: string; stem: string; options: string[]; choice: number | null };
+
+function Mock() {
+  const [exam, setExam] = useState<any>(null); const [res, setRes] = useState<any>(null);
+  const [i, setI] = useState(0); const [left, setLeft] = useState(0); const [err, setErr] = useState("");
+  const finish = async (id: string) => { try { setRes(await post(`/mock/${id}/submit`, {})); await AsyncStorage.removeItem("mock"); } catch (e) { setErr(String(e)); } };
+  const load = async (id: string) => {
+    const e = await api<any>(`/mock/${id}`);
+    if (e.status === "submitted") { setRes(await api(`/mock/${id}/result`)); await AsyncStorage.removeItem("mock"); return; }
+    setExam(e); setLeft(e.seconds_left);
+  };
+  useEffect(() => { AsyncStorage.getItem("mock").then((id) => { if (id) load(id).catch(() => AsyncStorage.removeItem("mock")); }); }, []);
+  useEffect(() => { if (!exam || res) return; const t = setInterval(() => setLeft((l) => Math.max(0, l - 1)), 1000); return () => clearInterval(t); }, [exam, res]);
+  useEffect(() => { if (exam && !res && left === 0) finish(exam.id); }, [left]);
+  const start = async (preset: string) => {
+    setErr(""); setRes(null); setI(0);
+    try { const e = await post("/mock/start", { preset }); await AsyncStorage.setItem("mock", e.id); setExam(e); setLeft(e.seconds_left); }
+    catch (x) { setErr(String(x)); }
+  };
+  const pick = (q: MQ, k: number) => {
+    const next = q.choice === k ? null : k;
+    setExam({ ...exam, questions: exam.questions.map((x: MQ) => (x.id === q.id ? { ...x, choice: next } : x)) });
+    api(`/mock/${exam.id}/answer`, { method: "PUT", body: JSON.stringify({ question_id: q.id, choice: next }) }).catch((e) => setErr(String(e)));
+  };
+  const fmt = (n: number) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
+
+  if (res) return (<ScrollView contentContainerStyle={s.pad}>
+    <View style={s.card}>
+      <Text style={s.bold}>{res.score} / {res.total} ({res.percent}%)</Text>
+      <Text>{res.passed ? "Pass" : "Below pass mark"} (pass mark {res.pass_mark}, no negative marking)</Text>
+      {res.by_subject.map((x: any) => <Text key={x.subject}>{x.subject}: {x.correct}/{x.total}</Text>)}
+      <Btn t="New mock" onPress={() => { setRes(null); setExam(null); }} />
+    </View>
+    {res.review.map((r: any) => (<View key={r.pos} style={s.card}>
+      <Text style={s.bold}>{r.pos}. {r.stem}</Text>
+      {r.options.map((o: string, k: number) => <Text key={k} style={[s.opt, k === r.answer && s.good, k === r.chosen && k !== r.answer && s.bad]}>{String.fromCharCode(65 + k)}. {o}{k === r.chosen ? " (your answer)" : ""}</Text>)}
+      {r.chosen === null && <Text style={s.muted}>Not answered</Text>}
+      <Text>{r.explanation}</Text><Text style={s.muted}>Source: {r.source}</Text>
+      {!r.reviewed && <Text style={s.muted}>Draft question, not yet doctor-reviewed.</Text>}
+    </View>))}
+  </ScrollView>);
+
+  if (!exam) return (<ScrollView contentContainerStyle={s.pad}>
+    <Text style={s.muted}>FMGE format: 4-option MCQs, 1 mark each, no negative marking, pass at 50%. Explanations appear after you submit.</Text>
+    {!!err && <Text style={{ color: "#b91c1c" }}>{err}</Text>}
+    <Btn t="Quick test (20 Q, 20 min)" onPress={() => start("quick")} />
+    <Btn t="Section (50 Q, 50 min)" onPress={() => start("section")} />
+    <Btn t="Part A (150 Q, 150 min)" onPress={() => start("part_a")} />
+    <Btn t="Part B (150 Q, 150 min)" onPress={() => start("part_b")} />
+  </ScrollView>);
+
+  const q: MQ = exam.questions[i];
+  const answered = exam.questions.filter((x: MQ) => x.choice !== null).length;
+  return (<ScrollView contentContainerStyle={s.pad}>
+    <View style={[s.row, { justifyContent: "space-between" }]}><Text style={s.bold}>Q {i + 1} of {exam.total}</Text><Text style={[s.bold, left < 300 && { color: "#b91c1c" }]}>{fmt(left)}</Text></View>
+    {!!err && <Text style={{ color: "#b91c1c" }}>{err}</Text>}
+    <Text style={s.muted}>{q.subject}</Text>
+    <Text style={s.bold}>{q.stem}</Text>
+    {q.options.map((o, k) => (<Pressable key={k} onPress={() => pick(q, k)} style={[s.opt, q.choice === k && s.good]}><Text>{String.fromCharCode(65 + k)}. {o}</Text></Pressable>))}
+    <View style={s.row}><Btn alt t="Previous" onPress={() => i > 0 && setI(i - 1)} /><Btn t="Next" onPress={() => i < exam.total - 1 && setI(i + 1)} /></View>
+    <Text style={s.muted}>{answered} of {exam.total} answered. Jump to:</Text>
+    <View style={s.row}>{exam.questions.map((x: MQ, k: number) => (
+      <Pressable key={x.id} onPress={() => setI(k)} style={{ width: 36, padding: 8, alignItems: "center", borderRadius: 6, borderWidth: k === i ? 2 : 1, borderColor: "#14213d", backgroundColor: x.choice !== null ? "#15803d" : "#fff" }}>
+        <Text style={{ color: x.choice !== null ? "#fff" : "#14213d" }}>{k + 1}</Text></Pressable>))}</View>
+    <Btn t="Submit exam" onPress={() => finish(exam.id)} />
+  </ScrollView>);
+}
+
+const TABS = { Tutor, Practice, Mock, Planner, Cards };
 
 export default function App() {
   const [tab, setTab] = useState<keyof typeof TABS>("Tutor");

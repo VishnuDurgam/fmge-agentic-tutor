@@ -1,6 +1,8 @@
 # FMGE Agentic Tutor
 
-A free, open study companion for FMGE aspirants, built as a personal project to help my brother and others preparing for the exam.
+AI study companion for FMGE aspirants: library-grounded tutor, adaptive question bank, timed FMGE-format mock exams, study planner and spaced-repetition flashcards. FastAPI + LangGraph backend, Next.js website, Expo mobile app.
+
+Built as a personal project to help my brother and others preparing for the exam.
 
 ## Features
 - **Library first**: downloads open-licence textbooks (OpenStax) plus your own notes, indexes them, and everything below works from that library with source citations.
