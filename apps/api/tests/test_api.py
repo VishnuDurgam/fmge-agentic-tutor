@@ -230,3 +230,34 @@ def test_questions_from_own_upload_stay_private_and_feed_mock(monkeypatch):
         assert c.post("/mock/start", json={"preset": "my_material"}, headers=theirs).status_code == 404
         seen = {c.get("/quiz/next", headers=theirs).json()["id"] for _ in range(30)}
         assert out["made"][0]["id"] not in seen
+
+
+def test_options_shuffle_but_grading_stays_correct():
+    from app.db import conn
+    with TestClient(app) as c:
+        me = {"X-Learner-Id": "shuffler"}
+        orders = set()
+        for _ in range(40):
+            q = c.get("/quiz/next?subject=Anatomy", headers=me).json()
+            with conn() as db:
+                row = db.execute("SELECT options, answer FROM questions WHERE id=?", (q["id"],)).fetchone()
+            orig = json.loads(row["options"])
+            assert sorted(q["options"]) == sorted(orig)
+            orders.add(tuple(q["options"]))
+            right = q["options"].index(orig[row["answer"]])
+            r = c.post("/quiz/submit", json={"question_id": q["id"], "choice": right}, headers=me).json()
+            assert r["correct"] is True and r["answer"] == right
+        assert len(orders) > 5  # the same question appears in different orders
+
+        m = c.post("/mock/start", json={"preset": "quick"}, headers=me).json()
+        for qq in m["questions"]:
+            with conn() as db:
+                row = db.execute("SELECT options, answer FROM questions WHERE id=?", (qq["id"],)).fetchone()
+            orig = json.loads(row["options"])
+            right = qq["options"].index(orig[row["answer"]])
+            c.put(f"/mock/{m['id']}/answer", json={"question_id": qq["id"], "choice": right}, headers=me)
+        again = c.get(f"/mock/{m['id']}", headers=me).json()  # reopening keeps the same order and saved answers
+        assert [x["options"] for x in again["questions"]] == [x["options"] for x in m["questions"]]
+        res = c.post(f"/mock/{m['id']}/submit", headers=me).json()
+        assert res["score"] == res["total"] == m["total"]
+        assert all(r["chosen"] == r["answer"] for r in res["review"])

@@ -5,6 +5,7 @@ import random
 import time
 import uuid
 
+from .. import shuffle
 from ..db import conn
 
 PART_A = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Microbiology", "Pharmacology",
@@ -80,8 +81,14 @@ def view(learner, mid):
             "JOIN questions q ON q.id=i.question_id WHERE i.mock_id=? ORDER BY i.pos", (mid,)).fetchall()
     return {"id": mid, "preset": m["preset"], "status": m["status"], "seconds_left": left,
             "total": len(items),
-            "questions": [{"pos": r["pos"], "id": r["id"], "subject": r["subject"], "stem": r["stem"],
-                           "options": json.loads(r["options"]), "choice": r["choice"]} for r in items]}
+            "questions": [_view_q(mid, r) for r in items]}
+
+
+def _view_q(mid, r):
+    opts = json.loads(r["options"])
+    p = _perm(mid, r["id"], opts)
+    return {"pos": r["pos"], "id": r["id"], "subject": r["subject"], "stem": r["stem"],
+            "options": shuffle.apply(opts, p), "choice": shuffle.to_shuffled(r["choice"], p)}
 
 
 def answer(learner, mid, question_id, choice):
@@ -91,6 +98,12 @@ def answer(learner, mid, question_id, choice):
             return "missing"
         if m["status"] != "in_progress" or time.time() > m["started"] + m["duration_s"] + GRACE_S:
             return "closed"
+        q = c.execute("SELECT options FROM questions WHERE id=?", (question_id,)).fetchone()
+        if q and choice is not None:
+            opts = json.loads(q["options"])
+            if not 0 <= choice < len(opts):
+                return "missing"
+            choice = shuffle.to_original(choice, _perm(mid, question_id, opts))  # stored as the original index
         c.execute("UPDATE mock_items SET choice=? WHERE mock_id=? AND question_id=?", (choice, mid, question_id))
     return "ok"
 
@@ -138,10 +151,16 @@ def result(learner, mid):
         "percent": round(100 * m["score"] / total, 1) if total else 0,
         "pass_mark": (total + 1) // 2, "passed": m["score"] >= (total + 1) // 2,
         "by_subject": [{"subject": k, **v} for k, v in sorted(subj.items())],
-        "review": [{"pos": r["pos"], "stem": r["stem"], "options": json.loads(r["options"]),
-                    "chosen": r["choice"], "answer": r["answer"], "explanation": r["explanation"],
-                    "source": r["source"], "reviewed": bool(r["reviewed"])} for r in items],
+        "review": [_review_item(mid, r) for r in items],
     }
+
+
+def _review_item(mid, r):
+    opts = json.loads(r["options"])
+    p = _perm(mid, r["id"], opts)
+    return {"pos": r["pos"], "stem": r["stem"], "options": shuffle.apply(opts, p),
+            "chosen": shuffle.to_shuffled(r["choice"], p), "answer": shuffle.to_shuffled(r["answer"], p),
+            "explanation": r["explanation"], "source": r["source"], "reviewed": bool(r["reviewed"])}
 
 
 def history(learner):
@@ -149,3 +168,7 @@ def history(learner):
         rows = c.execute("SELECT id, preset, started, status, score FROM mocks WHERE learner=? "
                          "ORDER BY started DESC LIMIT 20", (learner,)).fetchall()
     return [dict(r) for r in rows]
+
+
+def _perm(mid, qid, options):
+    return shuffle.perm(f"{mid}:{qid}", options)  # same order every time this exam is opened

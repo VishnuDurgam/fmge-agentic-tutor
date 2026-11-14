@@ -34,6 +34,9 @@ CREATE TABLE IF NOT EXISTS user_chunks (
   id INTEGER PRIMARY KEY AUTOINCREMENT, doc_id TEXT, learner TEXT, source TEXT, title TEXT, text TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_uc_learner ON user_chunks(learner);
+CREATE TABLE IF NOT EXISTS served (
+  learner TEXT, question_id TEXT, perm TEXT, PRIMARY KEY (learner, question_id)
+);
 CREATE TABLE IF NOT EXISTS profiles (
   learner TEXT PRIMARY KEY, exam_date TEXT, hours_per_day REAL DEFAULT 4
 );
