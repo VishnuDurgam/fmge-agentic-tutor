@@ -30,6 +30,19 @@ export default function Practice() {
     setRes(await api<R>("/quiz/submit", { method: "POST", body: JSON.stringify({ question_id: q.id, choice: i }) }));
   }
 
+  async function generateMany() {
+    let total = 0;
+    for (let k = 0; k < 5; k++) {
+      setGen(`Making questions... ${total} added so far (round ${k + 1} of 5)`);
+      try {
+        const r = await api<{ made: unknown[] }>("/quiz/generate", { method: "POST", body: JSON.stringify({ topic, source, n: 10 }) });
+        total += r.made.length;
+      } catch (e) { setGen(`Stopped after ${total} questions. ${String(e)}`); return; }
+    }
+    setGen(`Added ${total} new draft questions.`);
+    load();
+  }
+
   async function generate() {
     setGen("Reading the books and writing questions...");
     try {
@@ -50,6 +63,7 @@ export default function Practice() {
         <strong>Make new questions from your study material</strong>
         <div className="row"><select value={source} onChange={(e) => setSource(e.target.value)}><option value="">All material</option>{sources.map((x) => <option key={x.name} value={x.name}>{x.name}{x.mine ? " (mine)" : ""}</option>)}</select></div>
         <div className="row" style={{ marginTop: 8 }}><input style={{ flex: 1 }} value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Topic, e.g. cardiac output (blank = random)" /><button onClick={generate}>Generate 5</button></div>
+        <div className="row" style={{ marginTop: 8 }}><button className="alt" onClick={generateMany}>Make about 50 (a few minutes)</button></div>
         {gen && <p className="muted">{gen}</p>}
       </div>
       {err && <p className="muted">{err}</p>}

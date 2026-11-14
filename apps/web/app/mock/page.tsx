@@ -40,7 +40,15 @@ export default function Mock() {
     const e = await api<Exam>(`/mock/${id}`);
     if (e.status === "submitted") { setRes(await api<Result>(`/mock/${id}/result`)); localStorage.removeItem("fmge_mock"); return; }
     setExam(e); setLeft(e.seconds_left);
+    try {
+      const st = JSON.parse(localStorage.getItem("fmge_mock_ui_" + id) || "{}");
+      if (typeof st.i === "number" && st.i < e.total) setI(st.i);
+      if (Array.isArray(st.flags)) setFlags(new Set<string>(st.flags));
+    } catch { /* ignore */ }
   }, []);
+  useEffect(() => {
+    if (exam && !res) localStorage.setItem("fmge_mock_ui_" + exam.id, JSON.stringify({ i, flags: Array.from(flags) }));
+  }, [exam, res, i, flags]);
 
   useEffect(() => { const id = localStorage.getItem("fmge_mock"); if (id) load(id).catch(() => localStorage.removeItem("fmge_mock")); }, [load]);
 
@@ -74,7 +82,7 @@ export default function Mock() {
           <p style={{ fontSize: "1.6rem", margin: 0 }}><strong>{res.score} / {res.total}</strong> ({res.percent}%)</p>
           <p style={{ color: res.passed ? "var(--good)" : "var(--bad)" }}><strong>{res.passed ? "Pass" : "Below pass mark"}</strong> <span className="muted">(pass mark {res.pass_mark}, no negative marking, {res.answered} answered)</span></p>
           {res.by_subject.map((s) => <div key={s.subject} className="row" style={{ justifyContent: "space-between" }}><span>{s.subject}</span><span className="muted">{s.correct}/{s.total}</span></div>)}
-          <p><button onClick={() => { setRes(null); setExam(null); }}>New mock</button></p>
+          <p><button onClick={() => { setRes(null); setExam(null); setI(0); setFlags(new Set()); }}>Back to mock exams</button></p>
         </div>
         <h3>Review with explanations</h3>
         {res.review.map((r) => (
@@ -100,12 +108,13 @@ export default function Mock() {
         {PRESETS.map(([k, t, d]) => (
           <div className="card" key={k}><strong>{t}</strong><div className="muted">{d}</div><p><button onClick={() => start(k)}>Start</button></p></div>
         ))}
-        <p className="muted">If the question bank has fewer questions than a preset needs, the test uses what is available. Load more with MedMCQA or the question generator.</p>
+        <p className="muted">If the question bank has fewer questions than a preset needs, the test uses what is available. Make more questions in Practice, Generate.</p>
       </>
     );
   }
 
   const q = exam.questions[i];
+  const short = exam.requested && exam.requested > exam.total ? exam.requested : 0;
   const answered = exam.questions.filter((x) => x.choice !== null).length;
   return (
     <>
@@ -114,6 +123,7 @@ export default function Mock() {
         <strong style={{ color: left < 300 ? "var(--bad)" : "inherit" }}>{fmt(left)}</strong>
       </div>
       {err && <p style={{ color: "var(--bad)" }}>{err}</p>}
+      {short > 0 && <div className="notice">Only {exam.total} of {short} questions are in the bank, so the timer is set to {exam.total} minutes. Add more in Practice, Generate.</div>}
       <div className="card">
         <div className="muted">{q.subject}</div>
         <p><strong>{q.stem}</strong></p>
@@ -133,7 +143,11 @@ export default function Mock() {
             <button key={x.id} onClick={() => setI(k)} style={{ width: 38, padding: 6, background: flags.has(x.id) ? "#f59e0b" : x.choice !== null ? "var(--good)" : "#fff", color: x.choice !== null || flags.has(x.id) ? "#fff" : "var(--ink)", border: k === i ? "2px solid var(--ink)" : "1px solid var(--line)" }}>{k + 1}</button>
           ))}
         </div>
-        <p><button onClick={() => confirm(`Submit now? ${exam.total - answered} unanswered.`) && finish(exam.id)} style={{ background: "var(--bad)" }}>Submit exam</button></p>
+        <div className="row">
+          <button onClick={() => confirm(`Submit the exam now? ${exam.total - answered} questions are unanswered. You will see the answers and explanations.`) && finish(exam.id)} style={{ background: "var(--bad)" }}>Submit exam</button>
+          <button className="alt" onClick={() => confirm("Cancel this exam? It will be submitted as it is and you will see the answers and explanations.") && finish(exam.id)}>Cancel exam</button>
+        </div>
+        <p className="muted">If you refresh or close the page, the exam and timer continue where you left.</p>
       </div>
     </>
   );

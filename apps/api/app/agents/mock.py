@@ -49,9 +49,10 @@ def start(learner, preset="quick"):
     if not ids:
         return None
     mid = uuid.uuid4().hex[:12]
+    duration = max(60, round(minutes * 60 * len(ids) / n))  # keep the real pace of one minute per question
     with conn() as c:
         c.execute("INSERT INTO mocks (id, learner, preset, started, duration_s) VALUES (?,?,?,?,?)",
-                  (mid, learner, preset, int(time.time()), minutes * 60))
+                  (mid, learner, preset, int(time.time()), duration))
         c.executemany("INSERT INTO mock_items (mock_id, pos, question_id) VALUES (?,?,?)",
                       [(mid, i + 1, q) for i, q in enumerate(ids)])
     out = view(learner, mid)

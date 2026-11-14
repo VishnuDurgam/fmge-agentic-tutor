@@ -40,7 +40,8 @@ def _openai_compat(provider, system, user, max_tokens):
                    headers={"Authorization": f"Bearer {os.environ[key_env]}"},
                    json={"model": model, "max_tokens": max_tokens,
                          "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]})
-    r.raise_for_status()
+    if r.status_code >= 400:
+        raise RuntimeError(f"{provider} returned {r.status_code}: {r.text[:240]}")
     return r.json()["choices"][0]["message"]["content"] or ""
 
 
@@ -72,5 +73,5 @@ def complete(system: str, user: str, max_tokens: int = 900) -> str:
                 return _anthropic(system, user, max_tokens)
             return _ollama(system, user, max_tokens) if p == LOCAL else _openai_compat(p, system, user, max_tokens)
         except Exception as e:  # noqa: BLE001
-            last = e
+            last = f"{p}: {e}" if p not in str(e) else e
     raise RuntimeError(f"All LLM providers failed: {last}")

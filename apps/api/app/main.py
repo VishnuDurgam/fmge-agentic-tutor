@@ -79,6 +79,27 @@ def health():
     return {"ok": True, "ai": llm.available(), "locked": bool(ACCESS_CODE)}
 
 
+@app.get("/health/ai")
+def health_ai():
+    """Tiny live test of the AI keys; shows the provider's own error text when it fails."""
+    prov = llm._active()
+    if not prov:
+        return {"ok": False, "providers": [], "error": "No AI key is set on the server"}
+    try:
+        return {"ok": True, "providers": prov, "reply": llm.complete("Reply with the single word OK.", "ping", 20)[:60]}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "providers": prov, "error": str(e)[:500]}
+
+
+def _ai_guard(fn, *a):
+    try:
+        return fn(*a)
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"The AI service failed: {str(e)[:300]}")
+
+
 @app.get("/subjects")
 def subjects():
     return SUBJECTS
@@ -86,7 +107,7 @@ def subjects():
 
 @app.post("/tutor/ask")
 def ask(b: Ask, x_learner_id: str | None = Header(None)):
-    return tutor.ask(b.question, b.subject, learner_id(x_learner_id), b.source)
+    return _ai_guard(tutor.ask, b.question, b.subject, learner_id(x_learner_id), b.source)
 
 
 @app.get("/quiz/next")
@@ -136,7 +157,7 @@ def add_card(b: CardIn, x_learner_id: str | None = Header(None)):
 
 @app.post("/cards/generate")
 def gen_cards(b: Gen, x_learner_id: str | None = Header(None)):
-    return generate.cards(learner_id(x_learner_id), b.topic, min(b.n, 10))
+    return _ai_guard(generate.cards, learner_id(x_learner_id), b.topic, min(b.n, 10))
 
 
 class GenQ(BaseModel):
@@ -150,7 +171,7 @@ def gen_questions(b: GenQ, x_learner_id: str | None = Header(None)):
     me = learner_id(x_learner_id)
     if not llm.available():
         raise HTTPException(503, "Add a free GEMINI_API_KEY or GROQ_API_KEY (or a local OLLAMA_MODEL) on the server to generate questions")
-    return generate.questions(b.topic or None, min(b.n, 20), b.source or None, me)
+    return _ai_guard(generate.questions, b.topic or None, min(b.n, 20), b.source or None, me)
 
 
 @app.get("/library/stats")
