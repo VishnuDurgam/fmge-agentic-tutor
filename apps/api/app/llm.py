@@ -5,6 +5,7 @@ ANTHROPIC_API_KEY is optional and paid. Models are overridable with env vars bec
 model lists change often. Without any key the app runs in offline mode.
 """
 import os
+import time
 
 import httpx
 
@@ -62,6 +63,20 @@ def _anthropic(system, user, max_tokens):
     return "".join(b.text for b in msg.content if getattr(b, "text", None))
 
 
+def _try(p, system, user, max_tokens):
+    """Retry a few times when the provider says it is busy (503) or rate limited (429)."""
+    for wait in (0, 3, 8, 15):
+        if wait:
+            time.sleep(wait)
+        try:
+            if p == "anthropic":
+                return _anthropic(system, user, max_tokens)
+            return _ollama(system, user, max_tokens) if p == LOCAL else _openai_compat(p, system, user, max_tokens)
+        except Exception as e:  # noqa: BLE001
+            if not any(c in str(e) for c in (" 503", " 429", "timed out", "Timeout")) or wait == 15:
+                raise
+
+
 def complete(system: str, user: str, max_tokens: int = 900) -> str:
     providers = _active()
     if not providers:
@@ -69,9 +84,7 @@ def complete(system: str, user: str, max_tokens: int = 900) -> str:
     last = None
     for p in providers:  # fall through to the next free tier when one is rate limited
         try:
-            if p == "anthropic":
-                return _anthropic(system, user, max_tokens)
-            return _ollama(system, user, max_tokens) if p == LOCAL else _openai_compat(p, system, user, max_tokens)
+            return _try(p, system, user, max_tokens)
         except Exception as e:  # noqa: BLE001
             last = f"{p}: {e}" if p not in str(e) else e
     raise RuntimeError(f"All LLM providers failed: {last}")
