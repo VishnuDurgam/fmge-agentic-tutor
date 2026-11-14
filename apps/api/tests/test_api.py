@@ -133,3 +133,13 @@ def test_mock_exam_flow():
         assert c.get(f"/mock/{m2['id']}", headers=H).json()["status"] == "submitted"
         assert c.put(f"/mock/{m2['id']}/answer", json={"question_id": q0["id"], "choice": 0}, headers=H).status_code == 409
         assert c.post("/mock/start", json={"preset": "nope"}, headers=H).status_code == 400
+
+
+def test_passcode_gate(monkeypatch):
+    import app.main as m
+    monkeypatch.setattr(m, "ACCESS_CODE", "letmein")
+    with TestClient(app) as c:
+        assert c.get("/health").json()["locked"] is True
+        assert c.get("/quiz/next", headers=H).status_code == 401
+        assert c.get("/quiz/next", headers={**H, "X-Access-Code": "wrong"}).status_code == 401
+        assert c.get("/quiz/next", headers={**H, "X-Access-Code": "letmein"}).status_code == 200

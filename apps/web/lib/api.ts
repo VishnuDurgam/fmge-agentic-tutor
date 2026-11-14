@@ -1,4 +1,4 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export function learnerId(): string {
   if (typeof window === "undefined") return "";
@@ -13,7 +13,7 @@ export function learnerId(): string {
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(BASE + path, {
     ...init,
-    headers: { "Content-Type": "application/json", "X-Learner-Id": learnerId(), ...(init.headers || {}) },
+    headers: { "Content-Type": "application/json", "X-Learner-Id": learnerId(), "X-Access-Code": typeof window === "undefined" ? "" : localStorage.getItem("fmge_code") || "", ...(init.headers || {}) },
   });
   if (!res.ok) throw new Error((await res.text()) || res.statusText);
   return res.json();

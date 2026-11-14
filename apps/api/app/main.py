@@ -1,4 +1,8 @@
-from fastapi import FastAPI, Header, HTTPException
+import hmac
+import os
+
+from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -8,7 +12,22 @@ from .config import CORS_ORIGINS, SUBJECTS
 from .db import init_db
 
 app = FastAPI(title="FMGE Agentic Tutor API")
+ACCESS_CODE = os.getenv("APP_PASSCODE", "")  # set this for a private deployment (only people with the code can use it)
 app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
+
+
+@app.middleware("http")
+async def passcode_gate(request: Request, call_next):
+    if ACCESS_CODE and request.method != "OPTIONS" and request.url.path not in ("/health", "/docs", "/openapi.json"):
+        sent = request.headers.get("x-access-code", "")
+        if not hmac.compare_digest(sent.encode(), ACCESS_CODE.encode()):
+            return JSONResponse({"detail": "Access code required"}, status_code=401)
+    return await call_next(request)
+
+
+@app.get("/auth/check")
+def auth_check():
+    return {"ok": True}
 
 
 @app.on_event("startup")
@@ -55,7 +74,7 @@ class Gen(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"ok": True, "ai": llm.available()}
+    return {"ok": True, "ai": llm.available(), "locked": bool(ACCESS_CODE)}
 
 
 @app.get("/subjects")

@@ -1,6 +1,7 @@
 import "./globals.css";
 import Link from "next/link";
 import type { Metadata, Viewport } from "next";
+import Gate from "./gate";
 
 export const metadata: Metadata = {
   title: "FMGE Agentic Tutor",
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Link href="/planner">Planner</Link>
           <Link href="/cards">Flashcards</Link>
         </nav>
-        <main>{children}</main>
+        <main><Gate>{children}</Gate></main>
         <script dangerouslySetInnerHTML={{ __html: "if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}" }} />
       </body>
     </html>
