@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 IMG = {".png", ".jpg", ".jpeg", ".webp"}
+SKIP = {"readme.md", "links.txt"}  # housekeeping files, not study notes
 
 
 def ocr(data: bytes) -> str:
@@ -53,6 +54,8 @@ def main(notes: Path, out_dir: Path) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     done = 0
     for src in sorted(p for p in notes.rglob("*") if p.is_file()):
+        if src.name.lower() in SKIP:
+            continue
         out = out_dir / (src.stem + ".md")
         if out.exists():
             continue

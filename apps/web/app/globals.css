@@ -6,7 +6,7 @@ nav a { padding:8px 12px; border-radius:8px; text-decoration:none; color:var(--i
 nav a:hover { background:var(--bg); }
 main { max-width:760px; margin:0 auto; padding:16px; }
 .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin:12px 0; }
-button, select, input, textarea { font:inherit; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff; }
+button, select, input, textarea { max-width:100%; min-width:0; box-sizing:border-box; font:inherit; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff; }
 button { background:var(--brand); color:#fff; border:none; cursor:pointer; }
 button.alt { background:#fff; color:var(--ink); border:1px solid var(--line); }
 button:disabled { opacity:.5; }
