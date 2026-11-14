@@ -1,0 +1,23 @@
+name: Read notes
+on:
+  push:
+    paths: ["content/notes/**"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  ocr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pymupdf pytesseract pillow
+      - run: python content/tools/ocr_notes.py
+      - name: Save the text to the repository
+        run: |
+          git config user.name "notes-bot"
+          git config user.email "noreply@example.com"
+          git add content/raw/notes
+          git diff --cached --quiet || (git commit -m "Read notes" && git push)
