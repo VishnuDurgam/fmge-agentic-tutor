@@ -28,22 +28,30 @@ def _valid(q) -> bool:
             and isinstance(q.get("answer"), int) and 0 <= q["answer"] < 4 and q.get("stem") and q.get("explanation"))
 
 
-def passages(topic: str | None, k: int):
+def passages(topic: str | None, k: int, source: str | None = None):
     if topic:
-        return retrieval.search(topic, k=k)
+        return retrieval.search(topic, k=k, source=source)
     chunks, _ = retrieval._index()
-    return random.sample(chunks, min(k, len(chunks))) if chunks else []
+    pool = [c for c in chunks if not source or c["source"] == source]
+    return random.sample(pool, min(k, len(pool))) if pool else []
 
 
-def questions(topic: str | None = None, n: int = 5):
-    """Generate up to n MCQs from library passages and store them as unreviewed drafts."""
-    if not llm.available():
-        return []
-    made = []
-    for p in passages(topic, max(1, n)):
+def questions(topic: str | None = None, n: int = 5, source: str | None = None):
+    """Generate up to n MCQs from library passages and store them as unreviewed drafts.
+
+    Passages from private material (content/raw/local-private) are only sent to a local model
+    (OLLAMA_MODEL) unless ALLOW_CLOUD_LLM_FOR_PRIVATE=1. Returns {"made": [...], "skipped_private": int}."""
+    made, skipped = [], 0
+    for p in passages(topic, max(1, n) * 3, source):
         if len(made) >= n:
             break
-        raw = llm.complete(QSYS, f"Passage ({p['source']} / {p.get('title','')}):\n{p['text']}\n\nWrite 1 MCQ.", 900)
+        priv = bool(p.get("private"))
+        if not llm.available(priv):
+            skipped += 1 if priv else 0
+            if not priv:
+                break
+            continue
+        raw = llm.complete(QSYS, f"Passage ({p['source']} / {p.get('title','')}):\n{p['text']}\n\nWrite 1 MCQ.", 900, private=priv)
         for q in _json_list(raw)[:1]:
             if not _valid(q):
                 continue
@@ -55,16 +63,18 @@ def questions(topic: str | None = None, n: int = 5):
                           (qid, subject, q.get("topic", p.get("title", "")), q["stem"],
                            json.dumps(q["options"]), q["answer"], q["explanation"], src))
             made.append({"id": qid, "subject": subject, "stem": q["stem"], "source": src})
-    return made
+    return {"made": made, "skipped_private": skipped}
 
 
 def cards(learner: str, topic: str, n: int = 5):
-    if not llm.available():
+    ps = passages(topic, 3)
+    priv = any(p.get("private") for p in ps)
+    if not llm.available(priv):
         return []
-    ctx = "\n\n".join(f"{p['text']}" for p in passages(topic, 3))
+    ctx = "\n\n".join(f"{p['text']}" for p in ps)
     raw = llm.complete(
         "Make FMGE flashcards from the passages only. Reply ONLY with a JSON list of {\"front\":..., \"back\":...}; one fact per card.",
-        f"Topic: {topic}\nPassages:\n{ctx or '(none)'}\nMake {n} cards.", 1200)
+        f"Topic: {topic}\nPassages:\n{ctx or '(none)'}\nMake {n} cards.", 1200, private=priv)
     out = []
     for x in _json_list(raw)[:n]:
         if isinstance(x, dict) and x.get("front") and x.get("back"):

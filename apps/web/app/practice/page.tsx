@@ -14,13 +14,15 @@ export default function Practice() {
   const [err, setErr] = useState("");
   const [topic, setTopic] = useState("");
   const [gen, setGen] = useState("");
+  const [sources, setSources] = useState<{ name: string; private: boolean }[]>([]);
+  const [source, setSource] = useState("");
 
   async function load(s = subject) {
     setPicked(null); setRes(null); setErr("");
     try { setQ(await api<Q>("/quiz/next" + (s ? `?subject=${encodeURIComponent(s)}` : ""))); }
     catch { setQ(null); setErr("No questions for this subject yet."); }
   }
-  useEffect(() => { api<string[]>("/subjects").then(setSubjects).catch(() => {}); load(""); }, []);
+  useEffect(() => { api<string[]>("/subjects").then(setSubjects).catch(() => {}); api<{ sources: { name: string; private: boolean }[] }>("/library/stats").then((l) => setSources(l.sources)).catch(() => {}); load(""); }, []);
 
   async function pick(i: number) {
     if (!q || res) return;
@@ -31,8 +33,8 @@ export default function Practice() {
   async function generate() {
     setGen("Reading the books and writing questions...");
     try {
-      const r = await api<unknown[]>("/quiz/generate", { method: "POST", body: JSON.stringify({ topic, n: 5 }) });
-      setGen(`Added ${r.length} new draft questions from the library`);
+      const r = await api<{ made: unknown[]; skipped_private: number }>("/quiz/generate", { method: "POST", body: JSON.stringify({ topic, source, n: 5 }) });
+      setGen(r.made.length ? `Added ${r.made.length} new draft questions` : "No questions made. Try a different topic or material.");
       load();
     } catch (e) { setGen(String(e)); }
   }
@@ -45,8 +47,9 @@ export default function Practice() {
         {subjects.map((s) => <option key={s}>{s}</option>)}
       </select>
       <div className="card">
-        <strong>Make new questions from the books</strong>
-        <div className="row"><input style={{ flex: 1 }} value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Topic, e.g. cardiac output (blank = random)" /><button onClick={generate}>Generate 5</button></div>
+        <strong>Make new questions from your study material</strong>
+        <div className="row"><select value={source} onChange={(e) => setSource(e.target.value)}><option value="">All material</option>{sources.map((x) => <option key={x.name} value={x.name}>{x.name}{x.private ? " (private)" : ""}</option>)}</select></div>
+        <div className="row" style={{ marginTop: 8 }}><input style={{ flex: 1 }} value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Topic, e.g. cardiac output (blank = random)" /><button onClick={generate}>Generate 5</button></div>
         {gen && <p className="muted">{gen}</p>}
       </div>
       {err && <p className="muted">{err}</p>}

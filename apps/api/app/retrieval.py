@@ -27,13 +27,13 @@ def reload():
     _index.cache_clear()
 
 
-def search(query: str, k: int = 4):
+def search(query: str, k: int = 4, source: str | None = None):
     chunks, bm = _index()
     if not bm:
         return []
     q = set(_tok(query))
     scores = bm.get_scores(list(q))
     # BM25 idf can go <= 0 on tiny corpora, so gate on token overlap instead of score sign
-    hits = [i for i in range(len(chunks)) if q & set(_tok(chunks[i]["text"]))]
+    hits = [i for i in range(len(chunks)) if q & set(_tok(chunks[i]["text"])) and (not source or chunks[i]["source"] == source)]
     top = sorted(hits, key=lambda i: scores[i], reverse=True)[:k]
     return [chunks[i] | {"score": float(scores[i])} for i in top]

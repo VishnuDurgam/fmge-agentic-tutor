@@ -141,20 +141,27 @@ def gen_cards(b: Gen, x_learner_id: str | None = Header(None)):
 class GenQ(BaseModel):
     topic: str = ""
     n: int = 5
+    source: str = ""
 
 
 @app.post("/quiz/generate")
 def gen_questions(b: GenQ, x_learner_id: str | None = Header(None)):
     learner_id(x_learner_id)
-    if not llm.available():
-        raise HTTPException(503, "Add a free GEMINI_API_KEY or GROQ_API_KEY on the server to generate questions")
-    return generate.questions(b.topic or None, min(b.n, 10))
+    if not llm.available() and not llm.available(True):
+        raise HTTPException(503, "Add a free GEMINI_API_KEY or GROQ_API_KEY (or a local OLLAMA_MODEL) on the server to generate questions")
+    out = generate.questions(b.topic or None, min(b.n, 20), b.source or None)
+    if not out["made"] and out["skipped_private"]:
+        raise HTTPException(409, "That material is private. Set OLLAMA_MODEL to use a local model so it stays on this computer.")
+    return out
 
 
 @app.get("/library/stats")
 def library_stats():
     chunks, _ = retrieval._index()
-    return {"chunks": len(chunks), "sources": sorted({c["source"] for c in chunks})}
+    sources = {}
+    for c in chunks:
+        sources.setdefault(c["source"], bool(c.get("private")))
+    return {"chunks": len(chunks), "sources": [{"name": k, "private": v} for k, v in sorted(sources.items())]}
 
 
 @app.post("/cards/{card_id}/review")

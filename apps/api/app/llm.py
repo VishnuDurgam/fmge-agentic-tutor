@@ -16,16 +16,24 @@ PROVIDERS = {
     "openrouter": ("https://openrouter.ai/api/v1", "OPENROUTER_API_KEY",
                    os.getenv("OPENROUTER_MODEL", "openai/gpt-oss-20b:free")),
 }
-ORDER = [p.strip() for p in os.getenv("LLM_PROVIDERS", "gemini,groq,openrouter,anthropic").split(",") if p.strip()]
+LOCAL = "ollama"  # runs on your own computer, so private material never leaves it
+ORDER = [p.strip() for p in os.getenv("LLM_PROVIDERS", "ollama,gemini,groq,openrouter,anthropic").split(",") if p.strip()]
 
 
-def _active():
-    return [p for p in ORDER if (p == "anthropic" and os.getenv("ANTHROPIC_API_KEY"))
-            or (p in PROVIDERS and os.getenv(PROVIDERS[p][1]))]
+def _active(private: bool = False):
+    out = []
+    for p in ORDER:
+        if p == LOCAL and os.getenv("OLLAMA_MODEL"):
+            out.append(p)
+        elif private and os.getenv("ALLOW_CLOUD_LLM_FOR_PRIVATE") != "1":
+            continue  # private material only goes to the local model unless you explicitly allow it
+        elif (p == "anthropic" and os.getenv("ANTHROPIC_API_KEY")) or (p in PROVIDERS and os.getenv(PROVIDERS[p][1])):
+            out.append(p)
+    return out
 
 
-def available() -> bool:
-    return bool(_active())
+def available(private: bool = False) -> bool:
+    return bool(_active(private))
 
 
 def _openai_compat(provider, system, user, max_tokens):
@@ -33,6 +41,15 @@ def _openai_compat(provider, system, user, max_tokens):
     r = httpx.post(f"{base}/chat/completions", timeout=60,
                    headers={"Authorization": f"Bearer {os.environ[key_env]}"},
                    json={"model": model, "max_tokens": max_tokens,
+                         "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]})
+    r.raise_for_status()
+    return r.json()["choices"][0]["message"]["content"] or ""
+
+
+def _ollama(system, user, max_tokens):
+    base = os.getenv("OLLAMA_URL", "http://localhost:11434/v1")
+    r = httpx.post(f"{base}/chat/completions", timeout=300,
+                   json={"model": os.environ["OLLAMA_MODEL"], "max_tokens": max_tokens,
                          "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]})
     r.raise_for_status()
     return r.json()["choices"][0]["message"]["content"] or ""
@@ -46,14 +63,18 @@ def _anthropic(system, user, max_tokens):
     return "".join(b.text for b in msg.content if getattr(b, "text", None))
 
 
-def complete(system: str, user: str, max_tokens: int = 900) -> str:
-    providers = _active()
+def complete(system: str, user: str, max_tokens: int = 900, private: bool = False) -> str:
+    providers = _active(private)
     if not providers:
+        if private:
+            return "[private material: set OLLAMA_MODEL to use a local model, so your notes stay on this computer]\n\n" + user[:600]
         return "[offline mode: add a free GEMINI_API_KEY or GROQ_API_KEY for AI answers]\n\n" + user[:600]
     last = None
     for p in providers:  # fall through to the next free tier when one is rate limited
         try:
-            return _anthropic(system, user, max_tokens) if p == "anthropic" else _openai_compat(p, system, user, max_tokens)
+            if p == "anthropic":
+                return _anthropic(system, user, max_tokens)
+            return _ollama(system, user, max_tokens) if p == LOCAL else _openai_compat(p, system, user, max_tokens)
         except Exception as e:  # noqa: BLE001
             last = e
     raise RuntimeError(f"All LLM providers failed: {last}")

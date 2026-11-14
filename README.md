@@ -7,7 +7,7 @@ Built as a personal project to help my brother and others preparing for the exam
 ## Features
 - **Library first**: downloads open-licence textbooks (OpenStax) plus your own notes, indexes them, and everything below works from that library with source citations.
 - **AI tutor**: LangGraph agent (retrieve then answer); says 'Not found in the library' when it has to fall back to general knowledge.
-- **Question generator**: reads passages and writes exam-style MCQs and flashcards with explanations, saved as drafts for doctor review.
+- **Question generator**: reads passages from any loaded material (pick a book or workbook) and writes exam-style MCQs and flashcards with explanations, saved as drafts for review. Private material is only sent to a local model (Ollama) unless you allow cloud.
 - **Timed mock exams**: FMGE format (4-option MCQs, +1, no negative marking, pass at 50%), question palette, mark for review, auto-submit when time ends, explanations and subject-wise score after submitting. Presets: quick (20 Q), section (50 Q), Part A and Part B (150 Q, 150 min).
 - **Adaptive Q-bank**: next question is weighted toward your weak topics; wrong answers get AI feedback.
 - **Study planner**: splits days across the 19 FMGE subjects by weightage and your accuracy, with a revision block.

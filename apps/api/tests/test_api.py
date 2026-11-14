@@ -73,11 +73,12 @@ def test_generate_questions_from_library(tmp_path, monkeypatch):
     fake = json.dumps([{"subject": "Physiology", "topic": "Heart", "stem": "Pacemaker of the heart?",
                         "options": ["SA node", "AV node", "Purkinje", "Bundle of His"], "answer": 0,
                         "explanation": "SA node sets the rate."}])
-    monkeypatch.setattr(gen.llm, "available", lambda: True)
+    monkeypatch.setattr(gen.llm, "available", lambda *a: True)
     monkeypatch.setattr(gen.llm, "complete", lambda *a, **k: fake)
     with TestClient(app) as c:
-        made = gen.questions("sinoatrial pacemaker", 1)
+        made = gen.questions("sinoatrial pacemaker", 1)["made"]
         assert made and made[0]["source"] == "Test Book (CC BY) / Heart"
+        assert gen.questions("sinoatrial pacemaker", 1, source="Other Book")["made"] == []
         stats = c.get("/library/stats").json()
         assert stats["chunks"] >= 1
     r.reload()
@@ -143,3 +144,26 @@ def test_passcode_gate(monkeypatch):
         assert c.get("/quiz/next", headers=H).status_code == 401
         assert c.get("/quiz/next", headers={**H, "X-Access-Code": "wrong"}).status_code == 401
         assert c.get("/quiz/next", headers={**H, "X-Access-Code": "letmein"}).status_code == 200
+
+
+def test_private_material_stays_off_cloud(tmp_path, monkeypatch):
+    import app.agents.generate as gen
+    import app.ingest as ing
+    import app.retrieval as r
+    monkeypatch.setattr(r, "CONTENT_DIR", tmp_path)
+    monkeypatch.setattr(ing, "CONTENT_DIR", tmp_path)
+    (tmp_path / "raw" / "local-private").mkdir(parents=True)
+    (tmp_path / "raw" / "local-private" / "w.md").write_text("source: Workbook (private)\ntitle: Heart\n\nThe sinoatrial node paces the heart.")
+    ing.main([])
+    r.reload()
+    for k in ("OLLAMA_MODEL", "ALLOW_CLOUD_LLM_FOR_PRIVATE"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("GEMINI_API_KEY", "cloud-key")
+    calls = []
+    monkeypatch.setattr(gen.llm, "complete", lambda *a, **k: calls.append(k) or "[]")
+    out = gen.questions("sinoatrial", 1)
+    assert out["made"] == [] and out["skipped_private"] >= 1 and calls == []  # nothing sent to the cloud
+    monkeypatch.setenv("OLLAMA_MODEL", "llama3.1:8b")
+    gen.questions("sinoatrial", 1)
+    assert calls and calls[0]["private"] is True  # local model path
+    r.reload()

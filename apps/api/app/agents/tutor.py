@@ -31,7 +31,7 @@ def retrieve(s: State) -> State:
 def answer(s: State) -> State:
     ctx = "\n\n".join(f"[{i+1}] {c['source']} / {c.get('title','')}: {c['text']}" for i, c in enumerate(s.get("context", [])))
     prompt = f"Library excerpts:\n{ctx or '(none found)'}\n\nQuestion: {s['question']}"
-    return {"answer": llm.complete(SYSTEM, prompt, 1000)}
+    return {"answer": llm.complete(SYSTEM, prompt, 1000, private=any(c.get("private") for c in s.get("context", [])))}
 
 
 def _build():
