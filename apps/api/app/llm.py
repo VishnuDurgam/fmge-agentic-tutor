@@ -10,7 +10,7 @@ import httpx
 
 PROVIDERS = {
     "gemini": ("https://generativelanguage.googleapis.com/v1beta/openai", "GEMINI_API_KEY",
-               os.getenv("GEMINI_MODEL", "gemini-2.5-flash")),
+               os.getenv("GEMINI_MODEL", "gemini-3.8-flash")),
     "groq": ("https://api.groq.com/openai/v1", "GROQ_API_KEY",
              os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")),
     "openrouter": ("https://openrouter.ai/api/v1", "OPENROUTER_API_KEY",
