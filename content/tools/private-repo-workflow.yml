@@ -22,7 +22,7 @@ jobs:
         run: |
           mkdir -p /tmp/drive
           [ -f notes/links.txt ] && grep -v '^\s*#' notes/links.txt | grep -v '^\s*$' | while read -r url; do
-            if echo "$url" | grep -q '/folders/'; then gdown --folder --remaining-ok "$url" -O /tmp/drive || true
+            if echo "$url" | grep -q '/folders/'; then gdown --folder "$url" -O /tmp/drive || true
             else gdown --fuzzy "$url" -O /tmp/drive/ || true; fi
           done || true
       - run: python /tmp/ocr_notes.py notes text && python /tmp/ocr_notes.py /tmp/drive text

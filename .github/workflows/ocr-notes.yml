@@ -22,7 +22,7 @@ jobs:
           grep -v '^\s*#' content/notes/links.txt | grep -v '^\s*$' | while read -r url; do
             echo "fetching $url"
             if echo "$url" | grep -q '/folders/'; then
-              gdown --folder --remaining-ok "$url" -O /tmp/drive || echo "could not read folder (is it shared with anyone who has the link?)"
+              gdown --folder "$url" -O /tmp/drive || echo "could not read folder (is it shared with anyone who has the link?)"
             else
               gdown --fuzzy "$url" -O /tmp/drive/ || echo "could not read file (is it shared with anyone who has the link?)"
             fi
