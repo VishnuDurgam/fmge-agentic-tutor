@@ -177,6 +177,8 @@ class LinkIn(BaseModel):
 
 @app.post("/library/link")
 def library_link(b: LinkIn, x_learner_id: str | None = Header(None)):
+    if "drive.google.com/drive/folders" in b.url or "drive.google.com/drive/u/" in b.url and "/folders/" in b.url:
+        raise HTTPException(400, "Google Drive folder links are not supported. Open one PDF, tap Share, set Anyone with the link, and paste that file link, or upload the PDF directly.")
     return {"id": library.ingest_link(learner_id(x_learner_id), b.url.strip())}
 
 
